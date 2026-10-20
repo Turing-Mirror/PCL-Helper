@@ -17,7 +17,7 @@ using Microsoft.Win32;
 [assembly: AssemblyDescription("PCL 下载功能恢复工具")]
 [assembly: AssemblyCompany("Turing Mirror Software")]
 [assembly: AssemblyProduct("PCL-Helper")]
-[assembly: AssemblyVersion("1.0.0.0")]
+
 namespace PclHelper {
  public static class Program {
   [STAThread] public static int Main(string[] args) {
@@ -52,7 +52,8 @@ namespace PclHelper {
   readonly Dictionary<string,LauncherEntry> byPath=new Dictionary<string,LauncherEntry>(StringComparer.OrdinalIgnoreCase);
   CancellationTokenSource scanCancellation;
   bool busy;
-  public MainWindow(string selected) {
+  public MainWindow(string selected) : this(selected,LauncherDiscovery.CommonRoots()) {}
+  public MainWindow(string selected,IEnumerable<string> startupRoots) {
    var xaml=@"<Grid xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Margin='30'>
 <Grid.Resources>
  <SolidColorBrush x:Key='Accent' Color='#1289f0'/><SolidColorBrush x:Key='Ink' Color='#1e242b'/><SolidColorBrush x:Key='Muted' Color='#5d6874'/>
@@ -60,7 +61,7 @@ namespace PclHelper {
  <Style TargetType='ListBoxItem'><Setter Property='HorizontalContentAlignment' Value='Stretch'/><Setter Property='Padding' Value='10'/><Setter Property='Margin' Value='0,2'/><Setter Property='Template'><Setter.Value><ControlTemplate TargetType='ListBoxItem'><Border x:Name='Row' Background='Transparent' CornerRadius='8' Padding='{TemplateBinding Padding}'><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property='IsSelected' Value='True'><Setter TargetName='Row' Property='Background' Value='#e8f4fd'/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
 </Grid.Resources>
 <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/><RowDefinition Height='Auto'/><RowDefinition Height='140'/><RowDefinition Height='Auto'/></Grid.RowDefinitions>
-<StackPanel><TextBlock Text='PCL-Helper' FontSize='25' FontWeight='SemiBold'/><TextBlock Text='恢复 PCL 下载与整合包安装功能' Foreground='{StaticResource Muted}' Margin='0,9,0,0'/></StackPanel>
+<StackPanel><TextBlock x:Name='Brand' Text='PCL-Helper' FontSize='25' FontWeight='SemiBold'/><TextBlock Text='恢复 PCL 下载与整合包安装功能' Foreground='{StaticResource Muted}' Margin='0,9,0,0'/></StackPanel>
 <Border Grid.Row='1' Background='White' CornerRadius='14' Padding='20' Margin='0,20,0,0'><Grid>
 <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
 <TextBlock Text='启动器' FontWeight='SemiBold' Margin='0,0,0,12'/>
@@ -72,10 +73,12 @@ namespace PclHelper {
 </Grid></Border>
 <StackPanel Grid.Row='2' Margin='0,16,0,0'><WrapPanel><Button x:Name='Enable' Content='恢复所选' Background='{StaticResource Accent}' Foreground='White'/><Button x:Name='Restore' Content='还原所选'/><Button x:Name='Inspect' Content='检查所选'/><Button x:Name='Launch' Content='启动所选'/><Button x:Name='LaunchHmcl' Content='启动 HMCL' ToolTip='选择 HMCL.exe 并启动' Margin='0'/></WrapPanel><WrapPanel Margin='0,10,0,0'><Button x:Name='SelectAll' Content='全选'/><Button x:Name='ClearSelection' Content='全不选'/><Button x:Name='EnableAll' Content='全部恢复'/><Button x:Name='RestoreAll' Content='全部还原'/></WrapPanel></StackPanel>
 <Border Grid.Row='3' Background='White' CornerRadius='14' Padding='16' Margin='0,16,0,12'><ScrollViewer VerticalScrollBarVisibility='Auto'><TextBlock x:Name='Status' Text='自动查找常用目录，也可以添加或拖入多个程序。' Foreground='{StaticResource Muted}' TextWrapping='Wrap' LineHeight='22'/></ScrollViewer></Border>
-<TextBlock Grid.Row='4' Text='v1 · Turing Mirror Software · 第三方独立工具' FontSize='11' Foreground='{StaticResource Muted}'/>
+<TextBlock x:Name='Version' Grid.Row='4' FontSize='11' Foreground='{StaticResource Muted}'/>
 </Grid>";
-   Title="PCL-Helper";Width=840;Height=780;MinWidth=740;MinHeight=710;WindowStartupLocation=WindowStartupLocation.CenterScreen;FontFamily=new System.Windows.Media.FontFamily("Microsoft YaHei UI");FontSize=13;Background=(System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#f4f6f8");Foreground=(System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#1e242b");
+   Title="PCL-Helper "+AppVersion.Name;Width=840;Height=780;MinWidth=740;MinHeight=710;WindowStartupLocation=WindowStartupLocation.CenterScreen;FontFamily=new System.Windows.Media.FontFamily("Microsoft YaHei UI");FontSize=13;Background=(System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#f4f6f8");Foreground=(System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#1e242b");
    var grid=(Grid)XamlReader.Parse(xaml);Content=grid;
+   ((TextBlock)grid.FindName("Brand")).Text="PCL-Helper "+AppVersion.Name;
+   ((TextBlock)grid.FindName("Version")).Text=AppVersion.Name+" · Turing Mirror Software · 第三方独立工具";
    path=(TextBox)grid.FindName("PathBox");status=(TextBlock)grid.FindName("Status");list=(ListBox)grid.FindName("Launchers");list.ItemsSource=entries;
    Func<string,Button> button=name=>(Button)grid.FindName(name);
    var browse=button("Browse");var find=button("Find");var folder=button("FindFolder");var allDrives=button("FindAll");stop=button("Stop");
@@ -100,7 +103,7 @@ namespace PclHelper {
    path.KeyDown+=(s,e)=>{if(e.Key==System.Windows.Input.Key.Enter)AddFiles(new[]{path.Text.Trim().Trim('"')});};
    AllowDrop=true;PreviewDragOver+=(s,e)=>{e.Effects=!busy&&e.Data.GetDataPresent(DataFormats.FileDrop)?DragDropEffects.Copy:DragDropEffects.None;e.Handled=true;};Drop+=async(s,e)=>{if(busy)return;var files=e.Data.GetData(DataFormats.FileDrop) as string[];if(files==null)return;AddFiles(files.Where(File.Exists));var directories=files.Where(Directory.Exists).ToArray();if(directories.Length>0)await Scan(directories);};
    if(!string.IsNullOrWhiteSpace(selected)&&File.Exists(selected))AddFiles(new[]{selected});
-   Loaded+=async(s,e)=>await Scan(LauncherDiscovery.CommonRoots());
+   Loaded+=async(s,e)=>await Scan(startupRoots);
    Closed+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};
   }
   LauncherEntry AddFile(string file) {

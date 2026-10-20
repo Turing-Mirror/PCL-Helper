@@ -11,5 +11,5 @@ if($LASTEXITCODE -ne 0){throw 'Probe compilation failed'}
 $test=Join-Path $root '.test-data\HmclLaunchTest.exe'
 & "$fx\csc.exe" /nologo /optimize+ "/out:$test" "/reference:$fx\WPF\WindowsBase.dll" "/reference:$fx\WPF\PresentationCore.dll" "/reference:$fx\WPF\PresentationFramework.dll" "/reference:$fx\System.Xaml.dll" "$root\tests\HmclLaunchTest.cs" "$root\src\HmclLauncher.cs"
 if($LASTEXITCODE -ne 0){throw 'Test compilation failed'}
-& $test $probe (Join-Path $preview 'PCL-Helper-v1.exe')
+& $test $probe (Join-Path $preview 'PCL-Helper-v2.exe')
 if($LASTEXITCODE -ne 0){throw 'HMCL launch test failed'}

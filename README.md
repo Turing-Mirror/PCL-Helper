@@ -1,6 +1,8 @@
-# PCL-Helper v1
+# PCL-Helper
 
 原生 WPF 下载功能恢复工具。支持 PCL 2.99.0.0，单文件运行，无需安装。
+
+本地开发版本为 v2，包含 HMCL 参数启动、自动查找与批量操作，暂未发布。公开下载仍为 v1。见 [v2 验证报告](docs/v2-verification.md)。
 
 下载：[GitHub Release](https://github.com/Turing-Mirror/PCL-Helper/releases/tag/v1) · [CNB Release](https://cnb.cool/Turing-Mirror/PCL-Helper/-/releases/tag/v1)
 
@@ -9,4 +11,3 @@
 本工具由 Turing Mirror Software 独立开发，与 PCL 官方无关联。PCL 本体、资源及修改后的程序不随工具分发。
 
 构建、实现与验证说明见 [docs/README.md](docs/README.md)。
-
