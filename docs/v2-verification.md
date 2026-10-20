@@ -43,6 +43,10 @@ networkRestricted=false
 
 ## 其他回归
 
+自动查找已修正为常用目录优先、随后覆盖本地固定磁盘。回归验证包含常用目录为空而其他根目录存在启动器、默认范围包含所有本地固定磁盘、扫描根去重，以及真实 WPF 窗口零结果后的手动添加提示。之前仅注入含启动器的测试目录，未覆盖默认范围不足的问题。
+
+当前窗口占用旧预览文件时，可使用 `tests/discovery.ps1 -PreviewDirectory "$PWD\.test-data\v2-search-fix"` 和 `tests/gui.ps1 -PreviewDirectory "$PWD\.test-data\v2-search-fix"` 验证并输出独立修正版，文件为 `.test-data/v2-search-fix/PCL-Helper-v2.exe`。
+
 `tests/discovery.ps1` 验证实际子进程的 JVM 选项、已有选项保留、父进程环境隔离、工作目录、多副本及重命名识别、重叠根去重、排除目录和取消，并对三个 PCL 副本逐一恢复、精确还原。
 
 `tests/smoke.ps1` 验证 PCL 补丁写入、重复操作、精确还原、全部 6 个改动方法的 CLR JIT，以及真实 PCL 下载页面初始化。

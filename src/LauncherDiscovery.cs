@@ -32,6 +32,8 @@ namespace PclHelper {
    return new[]{AppDomain.CurrentDomain.BaseDirectory,Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),Path.Combine(home,"Downloads"),Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs")}.Where(p=>!string.IsNullOrWhiteSpace(p)&&Directory.Exists(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
   }
   public static string[] AllDriveRoots(){return DriveInfo.GetDrives().Where(d=>d.DriveType==DriveType.Fixed&&d.IsReady).Select(d=>d.RootDirectory.FullName).ToArray();}
+  public static string[] AutomaticRoots(){return AutomaticRoots(CommonRoots(),AllDriveRoots());}
+  public static string[] AutomaticRoots(IEnumerable<string> commonRoots,IEnumerable<string> driveRoots){return commonRoots.Concat(driveRoots).Where(p=>!string.IsNullOrWhiteSpace(p)&&Directory.Exists(p)).Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();}
   public static LauncherEntry Identify(string path) {
    var file=Path.GetFullPath(path);
    if(!File.Exists(file)||!string.Equals(Path.GetExtension(file),".exe",StringComparison.OrdinalIgnoreCase))return null;

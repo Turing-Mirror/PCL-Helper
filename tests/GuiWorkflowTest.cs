@@ -20,7 +20,9 @@ class GuiWorkflowTest {
  static async Task Click(string name){var button=(Button)content.FindName(name);Assert(button!=null&&button.IsEnabled,"Button unavailable: "+name);button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Idle();}
  static T Descendant<T>(DependencyObject node) where T:DependencyObject {if(node is T)return (T)node;for(int i=0;i<VisualTreeHelper.GetChildrenCount(node);i++){var found=Descendant<T>(VisualTreeHelper.GetChild(node,i));if(found!=null)return found;}return null;}
  static async Task Run(string root,string original,string probe,string evidence) {
-  await Idle();Assert(list.Items.Count==4,"Automatic discovery did not populate all four executables");
+  await Idle();Assert(list.Items.Count==0&&status.Text.Contains("未找到 PCL 或 HMCL")&&status.Text.Contains("添加程序"),"Empty scan did not explain how to add a launcher");
+  await (Task)window.GetType().GetMethod("Scan",Private).Invoke(window,new object[]{new[]{root}});
+  await Idle();Assert(list.Items.Count==4,"Directory discovery did not populate all four executables");
   Assert(window.Title=="PCL-Helper v2"&&((TextBlock)content.FindName("Version")).Text.StartsWith("v2"),"GUI version mismatch");
   var items=list.Items.Cast<object>().ToArray();var pcl=items.Where(x=>Property(x,"Kind").ToString()=="Pcl"&&Property(x,"Name").ToString()!="PCL-broken.exe").ToArray();
   var broken=items.Single(x=>Property(x,"Name").ToString()=="PCL-broken.exe");var hmcl=items.Single(x=>Property(x,"Kind").ToString()=="Hmcl");
@@ -47,15 +49,16 @@ class GuiWorkflowTest {
   Assert(((Button)content.FindName("EnableAll")).IsEnabled,"Controls were not restored after cancellation");
   status.Text="v2 窗口流程验证通过：自动查找、勾选、批量恢复/还原、单项失败继续、停止查找。";
   window.UpdateLayout();var bitmap=new RenderTargetBitmap((int)content.ActualWidth+60,(int)content.ActualHeight+60,96,96,PixelFormats.Pbgra32);var drawing=new DrawingVisual();using(var canvas=drawing.RenderOpen()){var bounds=new Rect(0,0,content.ActualWidth+60,content.ActualHeight+60);canvas.DrawRectangle(window.Background,null,bounds);canvas.DrawRectangle(new VisualBrush(content),null,new Rect(30,30,content.ActualWidth,content.ActualHeight));}bitmap.Render(drawing);var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using(var file=File.Create(Path.Combine(evidence,"gui-v2.png")))encoder.Save(file);
-  File.WriteAllText(Path.Combine(evidence,"gui-workflow.txt"),"PASS: real WPF window Loaded scan; checkbox binding; select/clear; empty selection feedback; selected PCL patch and SHA256 restore; all targets including unchecked HMCL; per-file failure isolation; HMCL child environment; unchanged HMCL on restore; inspect; scan cancellation; controls re-enabled; v2 labels.\r\n");
+  File.WriteAllText(Path.Combine(evidence,"gui-workflow.txt"),"PASS: real WPF window Loaded empty scan and manual-add guidance; subsequent directory scan; checkbox binding; select/clear; empty selection feedback; selected PCL patch and SHA256 restore; all targets including unchecked HMCL; per-file failure isolation; HMCL child environment; unchanged HMCL on restore; inspect; scan cancellation; controls re-enabled; v2 labels.\r\n");
   Console.WriteLine(File.ReadAllText(Path.Combine(evidence,"gui-workflow.txt")));
  }
  [STAThread] static int Main(string[] args) {
   var gui=Assembly.Load(Read(Path.GetFullPath(args[0])));AppDomain.CurrentDomain.AssemblyResolve+=(s,e)=>{if(new AssemblyName(e.Name).Name!="Mono.Cecil")return null;using(var stream=gui.GetManifestResourceStream("Mono.Cecil.dll")){var bytes=new byte[stream.Length];stream.Read(bytes,0,bytes.Length);return Assembly.Load(bytes);}};
   var root=Path.GetFullPath(args[3]);Directory.CreateDirectory(root);var evidence=Path.GetFullPath(args[4]);Directory.CreateDirectory(evidence);
-  File.Copy(args[2],Path.Combine(root,"PCL-broken.exe"),true);File.Copy(args[1],Path.Combine(root,"PCL-one.exe"),true);File.Copy(args[1],Path.Combine(root,"PCL-two.exe"),true);File.Copy(args[2],Path.Combine(root,"HMCL-test.exe"),true);
+  File.WriteAllText(Path.Combine(root,"PCL-broken.exe"),"Invalid PCL test fixture");File.Copy(args[1],Path.Combine(root,"PCL-one.exe"),true);File.Copy(args[1],Path.Combine(root,"PCL-two.exe"),true);File.Copy(args[2],Path.Combine(root,"HMCL-test.exe"),true);
   var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};int exit=1;
-  window=(Window)Activator.CreateInstance(gui.GetType("PclHelper.MainWindow",true),new object[]{null,new[]{root}});content=(FrameworkElement)window.Content;list=(ListBox)content.FindName("Launchers");status=(TextBlock)content.FindName("Status");
+  var empty=Path.Combine(root,"empty-common");Directory.CreateDirectory(empty);
+  window=(Window)Activator.CreateInstance(gui.GetType("PclHelper.MainWindow",true),new object[]{null,new[]{empty}});content=(FrameworkElement)window.Content;list=(ListBox)content.FindName("Launchers");status=(TextBlock)content.FindName("Status");
   window.Loaded+=async(s,e)=>{try{await Run(root,args[1],args[2],evidence);exit=0;}catch(Exception ex){Console.WriteLine(ex);File.WriteAllText(Path.Combine(evidence,"gui-workflow.txt"),ex.ToString());}finally{window.Close();app.Shutdown();}};
   app.Run(window);return exit;
  }

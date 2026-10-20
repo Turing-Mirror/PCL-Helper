@@ -1,6 +1,7 @@
+param([string]$PreviewDirectory)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
-$preview=Join-Path $root '.test-data\hmcl-preview'
+$preview=if($PreviewDirectory){[IO.Path]::GetFullPath($PreviewDirectory)}else{Join-Path $root '.test-data\hmcl-preview'}
 & "$root\scripts\build.ps1" -OutputDirectory $preview
 $fx=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $probeDir=Join-Path $root '.test-data\hmcl launch test'
