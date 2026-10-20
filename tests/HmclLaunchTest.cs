@@ -26,8 +26,8 @@ class HmclLaunchTest {
    var gui=Assembly.Load(File.ReadAllBytes(Path.GetFullPath(args[1])));
    var window=(Window)Activator.CreateInstance(gui.GetType("PclHelper.MainWindow",true),new object[]{null});
    var content=(FrameworkElement)window.Content;
-   var button=content.FindName("LaunchHmcl") as Button;
-   Assert(button!=null && (string)button.Content=="启动 HMCL","HMCL GUI button missing");
+   var button=content.FindName("Launch") as Button;
+   Assert(button!=null && (string)button.Content=="启动所选"&&content.FindName("LaunchHmcl")==null,"Unified launch button missing or redundant HMCL button remains");
    Assert(content.FindName("Enable") is Button && content.FindName("Restore") is Button,"PCL controls missing");
    content.Measure(new Size(600,450));content.Arrange(new Rect(0,0,600,450));
    Assert(button.ActualWidth>0 && button.ActualHeight>0,"HMCL button not laid out");
