@@ -44,6 +44,25 @@ networkRestricted=false
 
 ## 其他回归
 
+### 官方 Windows exe 的反向对照
+
+已使用同一份官方 `HMCL-3.17.dev-8827fd0.exe` 和 Helper 实际使用的 `HmclLauncher.CreateStartInfo` 完成四组启动。测试探针通过 Java agent 在 HMCL 主界面启动前调用它自身的 `RegionUtils`，随后退出；未修改 HMCL 判定代码。
+
+| 条件 | 直接启动，上海时区 | Helper 启动，台北时区 |
+| --- | --- | --- |
+| 本机当前网络 | `networkRestricted=false` | `networkRestricted=false` |
+| 地区查询失败 | `networkRestricted=true` | `networkRestricted=false` |
+
+“地区查询失败”通过仅在测试子进程中设置不可连接的本地 HTTPS 代理制造，触发 HMCL 原有的查询失败时限制下载分支。它不是大陆网络的实测替代，也没有修改系统时区、代理设置或 HMCL 文件。
+
+结果证明官方 exe 接收了 Helper 的实际参数，并且已有的上海时区选项被后追加的台北时区覆盖。当前网络下上海时区也未触发限制，因此只切换时区不能在本机直接形成受限/不受限对照。真实页面变化和完整下载流程仍未验证；Windows 界面工具初始化失败，错误为 `windows sandbox failed: helper_unknown_error: setup refresh had errors`。
+
+证据位于 `.test-data/hmcl-contrast-fc98f78ff06e4a7dba98679237f7c309/contrast.txt`。复现命令：
+
+```powershell
+.\tests\hmcl-contrast.ps1 -JavaHome 'JDK 的完整目录' -HmclExe '官方 HMCL.exe 的完整路径'
+```
+
 根据用户反馈，自动查找已改为快速扫描：仅覆盖常用目录及其两层子目录，不扫描所有磁盘。回归验证包含默认范围、深度限制、重叠根去重、手动目录深层查找，以及真实 WPF 窗口零结果后的手动添加提示。
 
 当前窗口占用旧预览文件时，可使用 `tests/discovery.ps1 -PreviewDirectory "$PWD\.test-data\v2-search-fix"` 和 `tests/gui.ps1 -PreviewDirectory "$PWD\.test-data\v2-search-fix"` 验证并输出独立修正版，文件为 `.test-data/v2-search-fix/PCL-Helper-v2.exe`。
