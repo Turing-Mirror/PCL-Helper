@@ -1,12 +1,14 @@
-# PCL-Helper v1
+# PCL-Helper v2
 
 ## 使用
 
-运行 `release/PCL-Helper-v1.exe`，选择 PCL 2.99.0.0 的程序文件。退出 PCL 后点击“恢复下载”，然后重新打开 PCL。文件也可以拖入窗口。
+运行 `PCL-Helper-v2.exe`，快速扫描或添加启动器，勾选后点击“恢复所选”。PCL 需要先退出；HMCL 使用启动参数恢复。也可拖入程序或扫描指定目录。
 
-“还原原版”会按 SHA256 校验备份并恢复操作前的文件。备份文件为 `<PCL 文件名>.pcl-helper.bak`，记录为 `<PCL 文件名>.pcl-helper.json`。重复恢复下载与重复还原均可执行。旧测试补丁可通过经过校验的原始备份自动重新修补。
+PCL 的“还原所选”会按 SHA256 校验备份并恢复操作前的文件。备份文件为 `<PCL 文件名>.pcl-helper.bak`，记录为 `<PCL 文件名>.pcl-helper.json`。重复恢复下载与重复还原均可执行。旧测试补丁可通过经过校验的原始备份自动重新修补。
 
 GUI 为 C# / .NET Framework WPF 原生窗口，沿用 TRM UI 的浅色、字体、圆角、间距和按钮样式。没有 Tauri、Electron 或 WebView。
+
+HMCL、快速扫描、勾选操作及品牌入口见 [v2 使用说明](hmcl-support.md)。历史 v1 保留独立标签与附件。
 
 ## 恢复范围
 
@@ -28,7 +30,7 @@ Windows 需要 .NET Framework 4.x 的 C# 编译器和 WPF 程序集。运行：
 .\scripts\build.ps1
 ```
 
-脚本首次获取固定版本的 Mono.Cecil 0.11.6，并将其嵌入可执行文件。输出为 `release/PCL-Helper-v1.exe`。构建工具、测试副本、运行数据和输出目录已加入 `.gitignore`。
+脚本首次获取固定版本的 Mono.Cecil 0.11.6，并将其嵌入可执行文件。输出为 `release/PCL-Helper-v2.exe`。构建工具、测试副本、运行数据和输出目录已加入 `.gitignore`。
 
 ## 验证
 
@@ -42,7 +44,7 @@ Windows 需要 .NET Framework 4.x 的 C# 编译器和 WPF 程序集。运行：
 
 通过：补丁写入、状态检测、重复写入、SHA256 完整还原、重复还原、重新应用、非目标文件拒绝，以及全部 6 个改动方法的真实 CLR JIT 验证。隔离应用域内实际创建 PCL 的 WPF `PageDownloadInstall` 页面并运行 `LoaderInit` 成功，覆盖先前截图中的异常路径。
 
-已验证 PCL 修补后可启动；尚未完成整套 Minecraft 下载和所有整合包格式的端到端安装。桌面自动化运行时被本机沙箱初始化错误阻断，未以自动点击方式验证全部交互。
+已完成 HMCL 下载页面、两版 Minecraft 完整安装，以及 PCL Modrinth / CurseForge 格式样本的真实下载、安装和原版文件补全。PCL 补全不会恢复缺失模组。范围与截图见 [实际验证报告](verification/v2/download-install.md)。未以自动鼠标操作走完全部向导或进入游戏。
 
 ## 来源
 
