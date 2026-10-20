@@ -13,10 +13,13 @@ if(-not (Test-Path $cecil)) {
 }
 New-Item -ItemType Directory -Force (Join-Path $root 'release') | Out-Null
 $kind=if($Console){'exe'}else{'winexe'}
-$out=if($Console){'PCL-Helper-CLI.exe'}else{'PCL-Helper-v1.exe'}
+$versionSource=Get-Content -Raw (Join-Path $root 'src\AppVersion.cs')
+if($versionSource -notmatch 'public const string Name = "(v\d+)"'){throw 'Version definition missing'}
+$versionName=$Matches[1]
+$out=if($Console){'PCL-Helper-CLI.exe'}else{"PCL-Helper-$versionName.exe"}
 $outputDir=if($OutputDirectory){[IO.Path]::GetFullPath($OutputDirectory)}elseif($Console){Join-Path $root '.test-data'}else{Join-Path $root 'release'}
 New-Item -ItemType Directory -Force $outputDir | Out-Null
 $refs=@('System.dll','System.Core.dll','System.Windows.Forms.dll','System.Xaml.dll','System.Web.Extensions.dll','WPF\WindowsBase.dll','WPF\PresentationCore.dll','WPF\PresentationFramework.dll') | ForEach-Object { '/reference:'+(Join-Path $framework $_) }
-& $compiler /nologo /optimize+ /platform:anycpu "/target:$kind" "/out:$outputDir\$out" "/reference:$cecil" "/resource:$cecil,Mono.Cecil.dll" "/resource:$root\docs\Mono.Cecil.LICENSE.txt,Mono.Cecil.LICENSE.txt" @refs "$root\src\Patcher.cs" "$root\src\HmclLauncher.cs" "$root\src\LauncherDiscovery.cs" "$root\src\LauncherActions.cs" "$root\src\Program.cs"
+& $compiler /nologo /optimize+ /platform:anycpu "/target:$kind" "/out:$outputDir\$out" "/reference:$cecil" "/resource:$cecil,Mono.Cecil.dll" "/resource:$root\docs\Mono.Cecil.LICENSE.txt,Mono.Cecil.LICENSE.txt" @refs "$root\src\AppVersion.cs" "$root\src\Patcher.cs" "$root\src\HmclLauncher.cs" "$root\src\LauncherDiscovery.cs" "$root\src\LauncherActions.cs" "$root\src\Program.cs"
 if($LASTEXITCODE -ne 0){throw '编译失败'}
 Get-Item (Join-Path $outputDir $out) | Select-Object FullName,Length

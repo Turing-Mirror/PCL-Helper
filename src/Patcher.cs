@@ -13,7 +13,7 @@ using Mono.Cecil.Cil;
 
 namespace PclHelper {
  public sealed class PatchInfo {
-  public string HelperVersion = "v1";
+  public string HelperVersion = AppVersion.Name;
   public int PatchRevision = 2;
   public string OriginalSha256;
   public string PatchedSha256;
@@ -126,7 +126,7 @@ public static class Patcher {
      RestoreResourceInstall(m);
      RestoreModifyCard(m);
      flag.Constant=false;
-     secret.Fields.Add(new FieldDefinition(Marker,Mono.Cecil.FieldAttributes.Assembly|Mono.Cecil.FieldAttributes.Static|Mono.Cecil.FieldAttributes.Literal|Mono.Cecil.FieldAttributes.HasDefault,m.TypeSystem.String) { Constant="v1" });
+     secret.Fields.Add(new FieldDefinition(Marker,Mono.Cecil.FieldAttributes.Assembly|Mono.Cecil.FieldAttributes.Static|Mono.Cecil.FieldAttributes.Literal|Mono.Cecil.FieldAttributes.HasDefault,m.TypeSystem.String) { Constant=AppVersion.Name });
      secret.Fields.Add(new FieldDefinition("PCLHelperPatchRevision",Mono.Cecil.FieldAttributes.Assembly|Mono.Cecil.FieldAttributes.Static|Mono.Cecil.FieldAttributes.Literal|Mono.Cecil.FieldAttributes.HasDefault,m.TypeSystem.Int32) { Constant=2 });
      a.Write(temp);
     }
@@ -245,9 +245,3 @@ public static class Patcher {
   }
  }
 }
-
-
-
-
-
-

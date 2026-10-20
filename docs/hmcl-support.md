@@ -1,6 +1,6 @@
-# HMCL 与批量操作（本地待发布）
+# v2：HMCL 与批量操作（本地待发布）
 
-本次功能仅在本地准备，不推送、不更新公开 Release。HMCL 当前分析基线为 `8827fd06d8ea8bcd899e54f76004f63a447e2601`；含地区限制的新版本发布后，还需用真实发行包验证完整下载。
+本次功能仅在本地准备，不推送、不更新公开 Release。HMCL 当前分析基线为 `8827fd06d8ea8bcd899e54f76004f63a447e2601`；已验证该提交的官方 CI JAR 中的实际地区判定；正式发行包的完整下载链路仍待官方发布后验证。
 
 ## 查找与选择
 
@@ -29,7 +29,7 @@
 .\tests\smoke.ps1 -PclPath '原版 PCL.exe'
 ```
 
-本地预览输出为 `.test-data/hmcl-preview/PCL-Helper-v1.exe`，独立于已发布的 `release/PCL-Helper-v1.exe`。
+本地预览输出为 `.test-data/hmcl-preview/PCL-Helper-v2.exe`，独立于已发布的 `release/PCL-Helper-v1.exe`。
 
 已验证实际子进程的 JVM 选项传递、现有参数保留、父进程环境不变、带空格的工作目录、原生按钮及布局、多副本与重命名识别、重叠扫描根去重、目录排除、扫描取消、三个 PCL 副本的修补与精确还原、HMCL 不修改文件，以及原有 6 个 CLR 方法与真实 PCL 下载页构造。
 
@@ -37,3 +37,5 @@
 
 - 地区判定：https://github.com/HMCL-dev/HMCL/blob/8827fd06d8ea8bcd899e54f76004f63a447e2601/HMCL/src/main/java/org/jackhuang/hmcl/util/RegionUtils.java
 - 启动选项：https://github.com/HMCL-dev/HMCL/blob/8827fd06d8ea8bcd899e54f76004f63a447e2601/docs/Contributing_zh_Hans.md
+
+详细验证结果见 [v2-verification.md](v2-verification.md)。
