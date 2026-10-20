@@ -80,7 +80,7 @@ namespace PclHelper {
    var grid=(Grid)XamlReader.Parse(xaml);Content=grid;
    Icon=Branding.Image("App.ico");((Image)grid.FindName("BrandLogo")).Source=Branding.Image("Logo.png");
    ((TextBlock)grid.FindName("Brand")).Text="PCL-Helper "+AppVersion.Name;
-   ((TextBlock)grid.FindName("Version")).Text=AppVersion.Name+" · 图灵镜 Turing Mirror · 独立辅助工具";
+   ((TextBlock)grid.FindName("Version")).Text="版本号："+AppVersion.Name+" by 图灵镜 Turing Mirror";
    var links=Branding.ReadLinks();var footer=(WrapPanel)grid.FindName("BrandLinks");
    foreach(var link in links.links){var target=link;var shortcut=FooterButton(link.label);shortcut.ToolTip=link.url;shortcut.Click+=(s,e)=>{try{Process.Start(new ProcessStartInfo(target.url){UseShellExecute=true});}catch(Exception ex){status.Text="打开链接失败："+ex.Message;}};footer.Children.Add(shortcut);}
    var community=FooterButton(links.communityLabel);community.Name="Community";community.Click+=(s,e)=>CreateCommunityWindow().ShowDialog();footer.Children.Add(community);
