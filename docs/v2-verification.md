@@ -77,4 +77,4 @@ networkRestricted=false
 
 `tests/smoke.ps1` 验证 PCL 补丁写入、重复操作、精确还原、全部 6 个改动方法的 CLR JIT，以及真实 PCL 下载页面初始化。
 
-以上全部通过。HMCL 原生 exe 启动到完整游戏安装流程、真实鼠标操作和所有游戏版本/整合包安装尚未完成端到端验证。已发布的本地 v1 文件保持原 SHA256，两个远程仓库及 Release 保持不变。
+上述项目已通过，后续实际页面与完整下载验证见 [下载、安装与补全报告](verification/v2/download-install.md)。该报告已覆盖 HMCL 两个游戏版本的实际安装，以及 PCL Modrinth / CurseForge 格式样本的下载、安装与原版文件补全。真实鼠标完整向导、进入游戏及其他版本/整合包仍未覆盖。PCL 的原版补全不会恢复缺失模组。已发布的本地 v1 文件保持原 SHA256，两个远程仓库及 Release 保持不变。
