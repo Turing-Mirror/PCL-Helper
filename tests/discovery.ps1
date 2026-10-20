@@ -1,7 +1,8 @@
-param([string]$PclPath)
+param([string]$PclPath,[string]$PreviewDirectory)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
-& "$root\tests\hmcl.ps1"
+$preview=if($PreviewDirectory){[IO.Path]::GetFullPath($PreviewDirectory)}else{Join-Path $root '.test-data\hmcl-preview'}
+& "$root\tests\hmcl.ps1" -PreviewDirectory $preview
 $fx=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $cecil=Join-Path $root 'tools\cecil\lib\net40\Mono.Cecil.dll'
 Copy-Item -LiteralPath $cecil -Destination (Join-Path $root '.test-data\Mono.Cecil.dll')
@@ -10,5 +11,5 @@ $test=Join-Path $root '.test-data\LauncherDiscoveryTest.exe'
 if($LASTEXITCODE -ne 0){throw 'Discovery test compilation failed'}
 $source=if($PclPath){(Resolve-Path -LiteralPath $PclPath).Path}else{Join-Path $root '.test-data\original\Plain Craft Launcher 2.exe.pcl-helper.bak'}
 $case=Join-Path $root ('.test-data\discovery test '+[Guid]::NewGuid().ToString('N'))
-& $test $case $source (Join-Path $root '.test-data\hmcl launch test\HMCL-probe.exe') (Join-Path $root '.test-data\hmcl-preview\PCL-Helper-v2.exe')
+& $test $case $source (Join-Path $root '.test-data\hmcl launch test\HMCL-probe.exe') (Join-Path $preview 'PCL-Helper-v2.exe')
 if($LASTEXITCODE -ne 0){throw 'Discovery/batch test failed'}

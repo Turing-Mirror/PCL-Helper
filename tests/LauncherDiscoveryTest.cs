@@ -14,7 +14,11 @@ class LauncherDiscoveryTest {
    Copy(original,Path.Combine(root,"PCL.exe"));Copy(original,Path.Combine(root,"second","PCL-second.exe"));Copy(original,Path.Combine(root,"renamed-launcher.exe"));
    Copy(hmclProbe,Path.Combine(root,"HMCL-test.exe"));Copy(helper,Path.Combine(root,"PCL-Helper-local.exe"));Copy(original,Path.Combine(root,"node_modules","PCL-hidden.exe"));
    var found=new List<LauncherEntry>();
-   LauncherDiscovery.Scan(new[]{root,Path.Combine(root,"second")},new DiscoveryOptions(),CancellationToken.None,found.Add,null);
+   var empty=Path.Combine(root,"empty-common");Directory.CreateDirectory(empty);
+   var automatic=LauncherDiscovery.AutomaticRoots(new[]{empty},new[]{root,root});
+   Assert(automatic.Length==2&&automatic[0]==empty,"Common roots priority or root deduplication failed");
+   Assert(LauncherDiscovery.AllDriveRoots().All(d=>LauncherDiscovery.AutomaticRoots().Contains(d,StringComparer.OrdinalIgnoreCase)),"Default automatic search omits a local disk");
+   LauncherDiscovery.Scan(automatic,new DiscoveryOptions(),CancellationToken.None,found.Add,null);
    Assert(found.Count==4,"Discovery count mismatch: "+found.Count);
    Assert(found.Count(x=>x.Kind==LauncherKind.Pcl)==3&&found.Count(x=>x.Kind==LauncherKind.Hmcl)==1,"Launcher kinds mismatch");
    Assert(found.Any(x=>x.Name=="renamed-launcher.exe"),"Renamed PCL not detected by metadata");
@@ -36,7 +40,7 @@ class LauncherDiscoveryTest {
    var cancellation=new CancellationTokenSource();cancellation.Cancel();bool cancelled=false;
    try{LauncherDiscovery.Scan(new[]{root},new DiscoveryOptions(),cancellation.Token,x=>{},null);}catch(OperationCanceledException){cancelled=true;}
    Assert(cancelled,"Scan cancellation ignored");
-   Console.WriteLine("PASS: multiple/renamed executables, duplicate roots, helper/excluded directory filtering, cancellation, three PCL restore cycles, HMCL launch and no-file restore.");
+   Console.WriteLine("PASS: automatic search includes all fixed disks; empty common directory falls back to other roots; multiple/renamed executables, duplicate roots, helper/excluded directory filtering, cancellation, three PCL restore cycles, HMCL launch and no-file restore.");
    return 0;
   }catch(Exception ex){Console.WriteLine(ex);return 1;}
  }

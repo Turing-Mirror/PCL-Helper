@@ -1,7 +1,8 @@
-param([string]$PclPath)
+param([string]$PclPath,[string]$PreviewDirectory)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
-$build=& "$root\scripts\build.ps1" -OutputDirectory (Join-Path $root '.test-data\hmcl-preview')
+$preview=if($PreviewDirectory){[IO.Path]::GetFullPath($PreviewDirectory)}else{Join-Path $root '.test-data\hmcl-preview'}
+$build=& "$root\scripts\build.ps1" -OutputDirectory $preview
 $fx=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $test=Join-Path $root '.test-data\GuiWorkflowTest.exe'
 & "$fx\csc.exe" /nologo /optimize+ "/out:$test" "/reference:$fx\WPF\WindowsBase.dll" "/reference:$fx\WPF\PresentationCore.dll" "/reference:$fx\WPF\PresentationFramework.dll" "/reference:$fx\System.Xaml.dll" "$root\tests\GuiWorkflowTest.cs"
