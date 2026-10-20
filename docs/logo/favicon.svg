@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-125.3022 -175.7422 406.4844 406.4844" width="512" height="512">
+  <title>Turing Mirror</title>
+  <defs>
+    <clipPath id="tm-base">
+      <rect x="-300" y="15" width="700" height="150"/>
+    </clipPath>
+  </defs>
+  <g fill="none" stroke="#C9CED1" stroke-width="40">
+    <path d="M-84.57 -30.78 A90 90 0 0 1 77.94 -45 A90 90 0 0 0 240.45 -59.22"/>
+    <g clip-path="url(#tm-base)" stroke-linejoin="miter" stroke-miterlimit="10">
+      <path d="M-84.57 220 V35 L126.7 147.34"/>
+      <path d="M240.45 0 V220"/>
+    </g>
+  </g>
+</svg>

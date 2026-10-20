@@ -11,12 +11,13 @@
 `tests/gui.ps1` 在独立进程中显示真实 WPF 窗口，让窗口 Loaded 事件自动扫描测试目录，通过原生按钮事件和复选框绑定验证：
 
 - 自动列出两个真实 PCL 副本、一个 HMCL 启动探针和一个故意无效的 PCL 测试样本。
-- 全选、全不选、复选框双向绑定和空选择反馈。
+- 右侧单个“全选 / 全不选”切换按钮、部分勾选后的文字同步、复选框双向绑定和空选择反馈。
 - 恢复所选、还原所选，以及原文件 SHA256 精确恢复。
-- 全部恢复、全部还原，包括未勾选项目和 HMCL 启动。
+- 全选后通过“恢复所选”“还原所选”完成批量操作，包括 HMCL 启动；未勾选项目不处理。
 - 单项错误记录、其他项目继续执行，以及逐项和汇总结果。
 - 停止全盘扫描和操作完成后控件恢复可用。
 - 检查所选结果和完整 v2 界面标识。
+- 页头 LOGO、窗口图标、7 个官网/社媒/社群入口，以及真实 QQ 二维码窗口。已去除两个冗余批量按钮。
 
 截图：`.test-data/verification-v2/gui-v2.png`。窗口流程结果：`.test-data/verification-v2/gui-workflow.txt`。
 
@@ -46,6 +47,8 @@ networkRestricted=false
 自动查找已修正为常用目录优先、随后覆盖本地固定磁盘。回归验证包含常用目录为空而其他根目录存在启动器、默认范围包含所有本地固定磁盘、扫描根去重，以及真实 WPF 窗口零结果后的手动添加提示。之前仅注入含启动器的测试目录，未覆盖默认范围不足的问题。
 
 当前窗口占用旧预览文件时，可使用 `tests/discovery.ps1 -PreviewDirectory "$PWD\.test-data\v2-search-fix"` 和 `tests/gui.ps1 -PreviewDirectory "$PWD\.test-data\v2-search-fix"` 验证并输出独立修正版，文件为 `.test-data/v2-search-fix/PCL-Helper-v2.exe`。
+
+本次品牌与简化操作栏的预览输出为 `.test-data/v2-branded/PCL-Helper-v2.exe`，通过同样的 `-PreviewDirectory` 参数验证。图标包含全部 6 个尺寸，页头 PNG 的透明通道和二维码尺寸已核对。
 
 `tests/discovery.ps1` 验证实际子进程的 JVM 选项、已有选项保留、父进程环境隔离、工作目录、多副本及重命名识别、重叠根去重、排除目录和取消，并对三个 PCL 副本逐一恢复、精确还原。
 
