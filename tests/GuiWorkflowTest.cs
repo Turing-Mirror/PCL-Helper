@@ -23,7 +23,7 @@ class GuiWorkflowTest {
   await Idle();Assert(list.Items.Count==0&&status.Text.Contains("未找到 PCL 或 HMCL")&&status.Text.Contains("添加程序"),"Empty scan did not explain how to add a launcher");
   await (Task)window.GetType().GetMethod("Scan",Private).Invoke(window,new object[]{new[]{root},false});
   await Idle();Assert(list.Items.Count==4,"Directory discovery did not populate all four executables");
-  Assert(window.Title=="PCL-Helper v2"&&((TextBlock)content.FindName("Version")).Text.StartsWith("v2"),"GUI version mismatch");
+  Assert(window.Title=="PCL-Helper v2"&&((TextBlock)content.FindName("Version")).Text=="版本号：v2 by 图灵镜 Turing Mirror","GUI version mismatch");
   Assert(window.Icon!=null&&((Image)content.FindName("BrandLogo")).Source!=null,"Window icon or header logo missing");
   Assert(content.FindName("EnableAll")==null&&content.FindName("RestoreAll")==null&&content.FindName("ClearSelection")==null,"Removed buttons are still present");
   Assert(content.FindName("FindAll")==null&&(string)((Button)content.FindName("Find")).Content=="快速扫描","Full disk scan remains in the UI");
