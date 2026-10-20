@@ -67,7 +67,7 @@ namespace PclHelper {
 <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
 <TextBlock Text='启动器' FontWeight='SemiBold' Margin='0,0,0,12'/>
 <Grid Grid.Row='1'><Grid.ColumnDefinitions><ColumnDefinition Width='*'/><ColumnDefinition Width='Auto'/></Grid.ColumnDefinitions><TextBox x:Name='PathBox' VerticalContentAlignment='Center' Padding='10' BorderBrush='#dfe4ea' BorderThickness='1' Background='#f4f6f8'/><Button x:Name='Browse' Grid.Column='1' Content='添加程序' Margin='10,0,0,0'/></Grid>
-<WrapPanel Grid.Row='2' Margin='0,12,0,8'><Button x:Name='Find' Content='自动查找'/><Button x:Name='FindFolder' Content='扫描目录'/><Button x:Name='FindAll' Content='扫描全部磁盘'/><Button x:Name='Stop' Content='停止查找' IsEnabled='False'/></WrapPanel>
+<WrapPanel Grid.Row='2' Margin='0,12,0,8'><Button x:Name='Find' Content='快速扫描'/><Button x:Name='FindFolder' Content='扫描目录'/><Button x:Name='Stop' Content='停止查找' IsEnabled='False'/></WrapPanel>
 <ListBox x:Name='Launchers' Grid.Row='3' BorderThickness='0' Background='Transparent' ScrollViewer.HorizontalScrollBarVisibility='Disabled'>
 <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><CheckBox IsChecked='{Binding Selected,Mode=TwoWay}' VerticalAlignment='Center' Margin='0,0,12,0'/><StackPanel Grid.Column='1'><StackPanel Orientation='Horizontal'><TextBlock Text='{Binding KindLabel}' FontWeight='SemiBold' Foreground='{StaticResource Accent}' Margin='0,0,10,0'/><TextBlock Text='{Binding Name}' FontWeight='SemiBold'/></StackPanel><TextBlock Text='{Binding FullPath}' Foreground='{StaticResource Muted}' FontSize='11' TextWrapping='Wrap' Margin='0,4,0,0'/><TextBlock Text='{Binding Status}' Foreground='{StaticResource Muted}' FontSize='11' TextWrapping='Wrap' Margin='0,4,0,0'/></StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
 </ListBox>
@@ -86,13 +86,12 @@ namespace PclHelper {
    var community=FooterButton(links.communityLabel);community.Name="Community";community.Click+=(s,e)=>CreateCommunityWindow().ShowDialog();footer.Children.Add(community);
    path=(TextBox)grid.FindName("PathBox");status=(TextBlock)grid.FindName("Status");list=(ListBox)grid.FindName("Launchers");list.ItemsSource=entries;
    Func<string,Button> button=name=>(Button)grid.FindName(name);
-   var browse=button("Browse");var find=button("Find");var folder=button("FindFolder");var allDrives=button("FindAll");stop=button("Stop");
+   var browse=button("Browse");var find=button("Find");var folder=button("FindFolder");stop=button("Stop");
    var enable=button("Enable");var restore=button("Restore");var inspect=button("Inspect");var launch=button("Launch");var hmcl=button("LaunchHmcl");
    selectionToggle=button("ToggleSelection");
-   actions=new[]{browse,find,folder,allDrives,enable,restore,inspect,launch,hmcl,selectionToggle};
+   actions=new[]{browse,find,folder,enable,restore,inspect,launch,hmcl,selectionToggle};
    browse.Click+=(s,e)=>{var dialog=new OpenFileDialog{Filter="启动器程序|*.exe",Title="添加 PCL 或 HMCL",Multiselect=true};if(dialog.ShowDialog(this)==true)AddFiles(dialog.FileNames);};
-   find.Click+=async(s,e)=>await Scan(LauncherDiscovery.AutomaticRoots());
-   allDrives.Click+=async(s,e)=>await Scan(LauncherDiscovery.AllDriveRoots());
+   find.Click+=async(s,e)=>await Scan(LauncherDiscovery.AutomaticRoots(),true);
    folder.Click+=async(s,e)=>{using(var dialog=new System.Windows.Forms.FolderBrowserDialog{Description="选择要查找启动器的目录",ShowNewFolderButton=false}){if(dialog.ShowDialog()==System.Windows.Forms.DialogResult.OK)await Scan(new[]{dialog.SelectedPath});}};
    stop.Click+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};
    enable.Click+=async(s,e)=>await Operate(LauncherOperation.Enable);
@@ -105,7 +104,7 @@ namespace PclHelper {
    path.KeyDown+=(s,e)=>{if(e.Key==System.Windows.Input.Key.Enter)AddFiles(new[]{path.Text.Trim().Trim('"')});};
    AllowDrop=true;PreviewDragOver+=(s,e)=>{e.Effects=!busy&&e.Data.GetDataPresent(DataFormats.FileDrop)?DragDropEffects.Copy:DragDropEffects.None;e.Handled=true;};Drop+=async(s,e)=>{if(busy)return;var files=e.Data.GetData(DataFormats.FileDrop) as string[];if(files==null)return;AddFiles(files.Where(File.Exists));var directories=files.Where(Directory.Exists).ToArray();if(directories.Length>0)await Scan(directories);};
    if(!string.IsNullOrWhiteSpace(selected)&&File.Exists(selected))AddFiles(new[]{selected});
-   Loaded+=async(s,e)=>await Scan(startupRoots);
+   Loaded+=async(s,e)=>await Scan(startupRoots,true);
    Closed+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};
   }
   static Button FooterButton(string label){return new Button{Content=label,Padding=new Thickness(12,7,12,7),Margin=new Thickness(0,0,8,0),FontSize=12};}
@@ -124,13 +123,13 @@ namespace PclHelper {
    status.Text="已添加 "+count+" 个程序。"+(problems.Count>0?"\r\n"+string.Join("\r\n",problems):"");
   }
   void SetBusy(bool value) {busy=value;foreach(var action in actions)action.IsEnabled=!value;path.IsEnabled=!value;list.IsEnabled=!value;}
-  async Task Scan(IEnumerable<string> roots) {
+  async Task Scan(IEnumerable<string> roots,bool quick=false) {
    if(busy)return;
    SetBusy(true);scanCancellation=new CancellationTokenSource();stop.IsEnabled=true;
    var additions=new Progress<LauncherEntry>(item=>{if(!byPath.ContainsKey(item.FullPath))RegisterEntry(item);});
    var progress=new Progress<string>(directory=>status.Text="正在查找，已找到 "+entries.Count+" 个程序。\r\n"+directory);
    status.Text="正在查找启动器，可随时停止查找。";
-   try{await Task.Run(()=>LauncherDiscovery.Scan(roots,new DiscoveryOptions(),scanCancellation.Token,((IProgress<LauncherEntry>)additions).Report,((IProgress<string>)progress).Report));status.Text=entries.Count==0?"未找到 PCL 或 HMCL 程序。可点击“添加程序”、拖入启动器 exe，或选择启动器所在目录扫描。":"查找完成，共 "+entries.Count+" 个程序。请勾选后操作。";}
+   try{await Task.Run(()=>LauncherDiscovery.Scan(roots,quick?LauncherDiscovery.QuickOptions():new DiscoveryOptions(),scanCancellation.Token,((IProgress<LauncherEntry>)additions).Report,((IProgress<string>)progress).Report));status.Text=entries.Count==0?"未找到 PCL 或 HMCL 程序。可点击“添加程序”、拖入启动器 exe，或选择启动器所在目录扫描。":"查找完成，共 "+entries.Count+" 个程序。请勾选后操作。";}
    catch(OperationCanceledException){status.Text="已停止查找，保留已找到的 "+entries.Count+" 个程序。";}
    catch(Exception ex){status.Text=ex.Message;}
    finally{scanCancellation.Dispose();scanCancellation=null;stop.IsEnabled=false;SetBusy(false);}
