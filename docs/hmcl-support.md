@@ -19,7 +19,7 @@
 - HMCL 的恢复操作会启动该 exe，仅为它的子进程附加 `HMCL_JAVA_OPTS` 中的 `-Duser.timezone=Asia/Taipei`，保留已有 JVM 选项。
 - HMCL 程序文件和系统设置保持原样；还原时不结束现有进程，直接打开原程序即可按默认方式启动。
 
-“启动 HMCL”也可直接选择一个 HMCL exe 并附带参数启动。目前只处理 Windows exe。
+PCL 和 HMCL 统一使用“启动所选”。启动 HMCL 时自动附带恢复参数。目前只处理 Windows exe。
 
 ## 本地构建与验证
 
