@@ -21,11 +21,12 @@ class GuiWorkflowTest {
  static T Descendant<T>(DependencyObject node) where T:DependencyObject {if(node is T)return (T)node;for(int i=0;i<VisualTreeHelper.GetChildrenCount(node);i++){var found=Descendant<T>(VisualTreeHelper.GetChild(node,i));if(found!=null)return found;}return null;}
  static async Task Run(string root,string original,string probe,string evidence) {
   await Idle();Assert(list.Items.Count==0&&status.Text.Contains("未找到 PCL 或 HMCL")&&status.Text.Contains("添加程序"),"Empty scan did not explain how to add a launcher");
-  await (Task)window.GetType().GetMethod("Scan",Private).Invoke(window,new object[]{new[]{root}});
+  await (Task)window.GetType().GetMethod("Scan",Private).Invoke(window,new object[]{new[]{root},false});
   await Idle();Assert(list.Items.Count==4,"Directory discovery did not populate all four executables");
   Assert(window.Title=="PCL-Helper v2"&&((TextBlock)content.FindName("Version")).Text.StartsWith("v2"),"GUI version mismatch");
   Assert(window.Icon!=null&&((Image)content.FindName("BrandLogo")).Source!=null,"Window icon or header logo missing");
   Assert(content.FindName("EnableAll")==null&&content.FindName("RestoreAll")==null&&content.FindName("ClearSelection")==null,"Removed buttons are still present");
+  Assert(content.FindName("FindAll")==null&&(string)((Button)content.FindName("Find")).Content=="快速扫描","Full disk scan remains in the UI");
   var toggle=(Button)content.FindName("ToggleSelection");Assert((string)toggle.Content=="全不选","Initial selection label is incorrect");
   var footer=(WrapPanel)content.FindName("BrandLinks");Assert(footer.Children.Count==7,"Website/social/community buttons missing");
   Assert(footer.Children.OfType<Button>().First().ToolTip.ToString()=="https://www.turingmirror.com/","Official website URL mismatch");
@@ -52,7 +53,7 @@ class GuiWorkflowTest {
   foreach(var item in pcl)Assert(Hash(Property(item,"FullPath").ToString())==expected,"All restore was not exact");
   Assert(Hash(hmclPath)==hmclHash&&File.GetLastWriteTimeUtc(report)==written,"HMCL restore modified or relaunched the executable");
   await Click("ToggleSelection");pcl[0].GetType().GetProperty("Selected").SetValue(pcl[0],true,null);await Click("Inspect");Assert(status.Text.Contains("SHA256"),"Inspect result missing");
-  var all=(Button)content.FindName("FindAll");all.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));var stop=(Button)content.FindName("Stop");Assert(stop.IsEnabled,"Stop scan button not enabled");stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Idle();Assert(status.Text.Contains("已停止查找"),"Stop scan button did not cancel");
+  var find=(Button)content.FindName("Find");find.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));var stop=(Button)content.FindName("Stop");Assert(stop.IsEnabled,"Stop scan button not enabled");stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));await Idle();Assert(status.Text.Contains("已停止查找"),"Stop scan button did not cancel");
   Assert(toggle.IsEnabled&&((Button)content.FindName("Enable")).IsEnabled,"Controls were not restored after cancellation");
   var toggleX=toggle.TransformToAncestor(content).Transform(new Point(0,0)).X;var launch=(Button)content.FindName("LaunchHmcl");Assert(toggleX>launch.TransformToAncestor(content).Transform(new Point(0,0)).X+launch.ActualWidth,"Selection toggle is not at the right of the action row");
   status.Text="v2 窗口流程验证通过：自动查找、勾选、批量恢复/还原、单项失败继续、停止查找。";

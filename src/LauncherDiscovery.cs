@@ -23,17 +23,18 @@ namespace PclHelper {
   void Changed(string name){var handler=PropertyChanged;if(handler!=null)handler(this,new PropertyChangedEventArgs(name));}
  }
  public sealed class DiscoveryOptions {
+  public int MaximumDepth { get; set; }
   public ISet<string> ExcludedDirectories { get; set; }
-  public DiscoveryOptions(){ExcludedDirectories=new HashSet<string>(new[]{"Windows","$Recycle.Bin","System Volume Information",".git",".svn",".hg","node_modules",".gradle",".m2",".nuget",".cache",".test-data"},StringComparer.OrdinalIgnoreCase);}
+  public DiscoveryOptions(){MaximumDepth=int.MaxValue;ExcludedDirectories=new HashSet<string>(new[]{"Windows","$Recycle.Bin","System Volume Information",".git",".svn",".hg","node_modules",".gradle",".m2",".nuget",".cache",".test-data"},StringComparer.OrdinalIgnoreCase);}
  }
  public static class LauncherDiscovery {
   public static string[] CommonRoots() {
    var home=Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
    return new[]{AppDomain.CurrentDomain.BaseDirectory,Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),Path.Combine(home,"Downloads"),Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs")}.Where(p=>!string.IsNullOrWhiteSpace(p)&&Directory.Exists(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
   }
-  public static string[] AllDriveRoots(){return DriveInfo.GetDrives().Where(d=>d.DriveType==DriveType.Fixed&&d.IsReady).Select(d=>d.RootDirectory.FullName).ToArray();}
-  public static string[] AutomaticRoots(){return AutomaticRoots(CommonRoots(),AllDriveRoots());}
-  public static string[] AutomaticRoots(IEnumerable<string> commonRoots,IEnumerable<string> driveRoots){return commonRoots.Concat(driveRoots).Where(p=>!string.IsNullOrWhiteSpace(p)&&Directory.Exists(p)).Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();}
+  public static string[] AutomaticRoots(){return AutomaticRoots(CommonRoots());}
+  public static string[] AutomaticRoots(IEnumerable<string> roots){return roots.Where(p=>!string.IsNullOrWhiteSpace(p)&&Directory.Exists(p)).Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();}
+  public static DiscoveryOptions QuickOptions(){return new DiscoveryOptions{MaximumDepth=2};}
   public static LauncherEntry Identify(string path) {
    var file=Path.GetFullPath(path);
    if(!File.Exists(file)||!string.Equals(Path.GetExtension(file),".exe",StringComparison.OrdinalIgnoreCase))return null;
@@ -47,25 +48,28 @@ namespace PclHelper {
    return null;
   }
   public static void Scan(IEnumerable<string> roots,DiscoveryOptions options,CancellationToken cancellation,Action<LauncherEntry> found,Action<string> progress) {
-   var pending=new Stack<string>(roots.Where(p=>!string.IsNullOrWhiteSpace(p)&&Directory.Exists(p)).Reverse());
-   var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+   var pending=new Stack<KeyValuePair<string,int>>(roots.Where(p=>!string.IsNullOrWhiteSpace(p)&&Directory.Exists(p)).Reverse().Select(p=>new KeyValuePair<string,int>(p,0)));
+   var seen=new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
+   var foundPaths=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
    var clock=Stopwatch.StartNew();long last=-250;
    while(pending.Count>0) {
     cancellation.ThrowIfCancellationRequested();
-    var directory=Path.GetFullPath(pending.Pop());
-    if(!seen.Add(directory.TrimEnd(Path.DirectorySeparatorChar)))continue;
+    var next=pending.Pop();var directory=Path.GetFullPath(next.Key);var key=directory.TrimEnd(Path.DirectorySeparatorChar);int previous;
+    if(seen.TryGetValue(key,out previous)&&previous<=next.Value)continue;
+    seen[key]=next.Value;
     if(clock.ElapsedMilliseconds-last>=200){last=clock.ElapsedMilliseconds;if(progress!=null)progress(directory);}
     try {
      foreach(var file in Directory.EnumerateFiles(directory,"*.exe",SearchOption.TopDirectoryOnly)) {
       cancellation.ThrowIfCancellationRequested();
-      try{var entry=Identify(file);if(entry!=null)found(entry);}catch(IOException){}catch(UnauthorizedAccessException){}catch(ArgumentException){}
+      try{var entry=Identify(file);if(entry!=null&&foundPaths.Add(entry.FullPath))found(entry);}catch(IOException){}catch(UnauthorizedAccessException){}catch(ArgumentException){}
      }
     }catch(IOException){}catch(UnauthorizedAccessException){}
+    if(next.Value>=options.MaximumDepth)continue;
     try {
      foreach(var child in Directory.EnumerateDirectories(directory)) {
       cancellation.ThrowIfCancellationRequested();
       if(options.ExcludedDirectories.Contains(Path.GetFileName(child)))continue;
-      try{if((File.GetAttributes(child)&FileAttributes.ReparsePoint)==0)pending.Push(child);}catch(IOException){}catch(UnauthorizedAccessException){}
+      try{if((File.GetAttributes(child)&FileAttributes.ReparsePoint)==0)pending.Push(new KeyValuePair<string,int>(child,next.Value+1));}catch(IOException){}catch(UnauthorizedAccessException){}
      }
     }catch(IOException){}catch(UnauthorizedAccessException){}
    }

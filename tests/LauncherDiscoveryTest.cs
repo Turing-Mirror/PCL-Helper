@@ -15,14 +15,21 @@ class LauncherDiscoveryTest {
    Copy(hmclProbe,Path.Combine(root,"HMCL-test.exe"));Copy(helper,Path.Combine(root,"PCL-Helper-local.exe"));Copy(original,Path.Combine(root,"node_modules","PCL-hidden.exe"));
    var found=new List<LauncherEntry>();
    var empty=Path.Combine(root,"empty-common");Directory.CreateDirectory(empty);
-   var automatic=LauncherDiscovery.AutomaticRoots(new[]{empty},new[]{root,root});
+   var automatic=LauncherDiscovery.AutomaticRoots(new[]{empty,root,root});
    Assert(automatic.Length==2&&automatic[0]==empty,"Common roots priority or root deduplication failed");
-   Assert(LauncherDiscovery.AllDriveRoots().All(d=>LauncherDiscovery.AutomaticRoots().Contains(d,StringComparer.OrdinalIgnoreCase)),"Default automatic search omits a local disk");
+   Assert(LauncherDiscovery.AutomaticRoots().SequenceEqual(LauncherDiscovery.CommonRoots(),StringComparer.OrdinalIgnoreCase),"Quick search includes locations outside common directories");
    LauncherDiscovery.Scan(automatic,new DiscoveryOptions(),CancellationToken.None,found.Add,null);
    Assert(found.Count==4,"Discovery count mismatch: "+found.Count);
    Assert(found.Count(x=>x.Kind==LauncherKind.Pcl)==3&&found.Count(x=>x.Kind==LauncherKind.Hmcl)==1,"Launcher kinds mismatch");
    Assert(found.Any(x=>x.Name=="renamed-launcher.exe"),"Renamed PCL not detected by metadata");
    Assert(!found.Any(x=>x.Name.Contains("Helper")||x.Name.Contains("hidden")),"Helper or excluded directory was included");
+   var deep=Path.Combine(root,"second","level-two","level-three","PCL-deep.exe");Copy(original,deep);
+   var quick=new List<LauncherEntry>();LauncherDiscovery.Scan(new[]{root},LauncherDiscovery.QuickOptions(),CancellationToken.None,quick.Add,null);
+   Assert(quick.Count==4&&!quick.Any(x=>x.FullPath==deep),"Quick search exceeded its depth limit");
+   quick.Clear();LauncherDiscovery.Scan(new[]{root,Path.Combine(root,"second")},LauncherDiscovery.QuickOptions(),CancellationToken.None,quick.Add,null);
+   Assert(quick.Count==5&&quick.Any(x=>x.FullPath==deep),"Overlapping quick roots lost results or produced duplicates");
+   var manual=new List<LauncherEntry>();LauncherDiscovery.Scan(new[]{root},new DiscoveryOptions(),CancellationToken.None,manual.Add,null);
+   Assert(manual.Count==5&&manual.Any(x=>x.FullPath==deep),"Manual directory scan did not include deeper launchers");
    var hash=Patcher.Hash(original);
    foreach(var entry in found.Where(x=>x.Kind==LauncherKind.Pcl)) {
     LauncherActions.Run(entry,LauncherOperation.Enable);
@@ -40,7 +47,7 @@ class LauncherDiscoveryTest {
    var cancellation=new CancellationTokenSource();cancellation.Cancel();bool cancelled=false;
    try{LauncherDiscovery.Scan(new[]{root},new DiscoveryOptions(),cancellation.Token,x=>{},null);}catch(OperationCanceledException){cancelled=true;}
    Assert(cancelled,"Scan cancellation ignored");
-   Console.WriteLine("PASS: automatic search includes all fixed disks; empty common directory falls back to other roots; multiple/renamed executables, duplicate roots, helper/excluded directory filtering, cancellation, three PCL restore cycles, HMCL launch and no-file restore.");
+   Console.WriteLine("PASS: quick search uses only common directories and two subdirectory levels; manual scan includes deeper launchers; overlapping roots deduplicated; multiple/renamed executables; excluded directories; cancellation; three PCL restore cycles; HMCL launch and no-file restore.");
    return 0;
   }catch(Exception ex){Console.WriteLine(ex);return 1;}
  }
