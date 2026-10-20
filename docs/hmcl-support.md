@@ -13,7 +13,7 @@
 ## 恢复与还原
 
 - “恢复所选”“还原所选”处理勾选项目。
-- “全部恢复”“全部还原”处理列表中的所有项目。
+- 操作栏最右侧的“全选 / 全不选”切换勾选状态；全选后点击“恢复所选”或“还原所选”即可批量处理。
 - 每项独立执行并显示结果，一项失败不会中断其他项目。
 - PCL 继续使用已验证的文件补丁、原文件备份与 SHA256 还原，支持范围仍为 2.99.0.0。
 - HMCL 的恢复操作会启动该 exe，仅为它的子进程附加 `HMCL_JAVA_OPTS` 中的 `-Duser.timezone=Asia/Taipei`，保留已有 JVM 选项。
@@ -39,3 +39,5 @@
 - 启动选项：https://github.com/HMCL-dev/HMCL/blob/8827fd06d8ea8bcd899e54f76004f63a447e2601/docs/Contributing_zh_Hans.md
 
 详细验证结果见 [v2-verification.md](v2-verification.md)。
+
+图灵镜 LOGO、软件图标、底部官网和社媒入口、QQ 社群二维码见 [branding.md](branding.md)。

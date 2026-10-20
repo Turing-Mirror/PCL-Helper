@@ -14,7 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Markup;
 using Microsoft.Win32;
 [assembly: AssemblyTitle("PCL-Helper")]
-[assembly: AssemblyDescription("PCL 下载功能恢复工具")]
+[assembly: AssemblyDescription("PCL 与 HMCL 下载功能恢复工具")]
 [assembly: AssemblyCompany("Turing Mirror Software")]
 [assembly: AssemblyProduct("PCL-Helper")]
 
@@ -48,6 +48,7 @@ namespace PclHelper {
   readonly ListBox list;
   readonly Button[] actions;
   readonly Button stop;
+  readonly Button selectionToggle;
   readonly ObservableCollection<LauncherEntry> entries=new ObservableCollection<LauncherEntry>();
   readonly Dictionary<string,LauncherEntry> byPath=new Dictionary<string,LauncherEntry>(StringComparer.OrdinalIgnoreCase);
   CancellationTokenSource scanCancellation;
@@ -61,7 +62,7 @@ namespace PclHelper {
  <Style TargetType='ListBoxItem'><Setter Property='HorizontalContentAlignment' Value='Stretch'/><Setter Property='Padding' Value='10'/><Setter Property='Margin' Value='0,2'/><Setter Property='Template'><Setter.Value><ControlTemplate TargetType='ListBoxItem'><Border x:Name='Row' Background='Transparent' CornerRadius='8' Padding='{TemplateBinding Padding}'><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property='IsSelected' Value='True'><Setter TargetName='Row' Property='Background' Value='#e8f4fd'/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
 </Grid.Resources>
 <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/><RowDefinition Height='Auto'/><RowDefinition Height='140'/><RowDefinition Height='Auto'/></Grid.RowDefinitions>
-<StackPanel><TextBlock x:Name='Brand' Text='PCL-Helper' FontSize='25' FontWeight='SemiBold'/><TextBlock Text='恢复 PCL 下载与整合包安装功能' Foreground='{StaticResource Muted}' Margin='0,9,0,0'/></StackPanel>
+<Grid><Grid.ColumnDefinitions><ColumnDefinition Width='88'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><Image x:Name='BrandLogo' Width='72' Height='72' HorizontalAlignment='Left' Stretch='Uniform'/><StackPanel Grid.Column='1' VerticalAlignment='Center'><TextBlock x:Name='Brand' Text='PCL-Helper' FontSize='25' FontWeight='SemiBold'/><TextBlock Text='恢复 PCL 与 HMCL 下载功能' Foreground='{StaticResource Muted}' Margin='0,9,0,0'/></StackPanel></Grid>
 <Border Grid.Row='1' Background='White' CornerRadius='14' Padding='20' Margin='0,20,0,0'><Grid>
 <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
 <TextBlock Text='启动器' FontWeight='SemiBold' Margin='0,0,0,12'/>
@@ -71,33 +72,34 @@ namespace PclHelper {
 <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><CheckBox IsChecked='{Binding Selected,Mode=TwoWay}' VerticalAlignment='Center' Margin='0,0,12,0'/><StackPanel Grid.Column='1'><StackPanel Orientation='Horizontal'><TextBlock Text='{Binding KindLabel}' FontWeight='SemiBold' Foreground='{StaticResource Accent}' Margin='0,0,10,0'/><TextBlock Text='{Binding Name}' FontWeight='SemiBold'/></StackPanel><TextBlock Text='{Binding FullPath}' Foreground='{StaticResource Muted}' FontSize='11' TextWrapping='Wrap' Margin='0,4,0,0'/><TextBlock Text='{Binding Status}' Foreground='{StaticResource Muted}' FontSize='11' TextWrapping='Wrap' Margin='0,4,0,0'/></StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
 </ListBox>
 </Grid></Border>
-<StackPanel Grid.Row='2' Margin='0,16,0,0'><WrapPanel><Button x:Name='Enable' Content='恢复所选' Background='{StaticResource Accent}' Foreground='White'/><Button x:Name='Restore' Content='还原所选'/><Button x:Name='Inspect' Content='检查所选'/><Button x:Name='Launch' Content='启动所选'/><Button x:Name='LaunchHmcl' Content='启动 HMCL' ToolTip='选择 HMCL.exe 并启动' Margin='0'/></WrapPanel><WrapPanel Margin='0,10,0,0'><Button x:Name='SelectAll' Content='全选'/><Button x:Name='ClearSelection' Content='全不选'/><Button x:Name='EnableAll' Content='全部恢复'/><Button x:Name='RestoreAll' Content='全部还原'/></WrapPanel></StackPanel>
+<Grid Grid.Row='2' Margin='0,16,0,0'><Grid.ColumnDefinitions><ColumnDefinition Width='*'/><ColumnDefinition Width='Auto'/></Grid.ColumnDefinitions><WrapPanel><Button x:Name='Enable' Content='恢复所选' Background='{StaticResource Accent}' Foreground='White'/><Button x:Name='Restore' Content='还原所选'/><Button x:Name='Inspect' Content='检查所选'/><Button x:Name='Launch' Content='启动所选'/><Button x:Name='LaunchHmcl' Content='启动 HMCL' ToolTip='选择 HMCL.exe 并启动' Margin='0'/></WrapPanel><Button x:Name='ToggleSelection' Grid.Column='1' Content='全选' VerticalAlignment='Top' Margin='10,0,0,0'/></Grid>
 <Border Grid.Row='3' Background='White' CornerRadius='14' Padding='16' Margin='0,16,0,12'><ScrollViewer VerticalScrollBarVisibility='Auto'><TextBlock x:Name='Status' Text='自动查找常用目录，也可以添加或拖入多个程序。' Foreground='{StaticResource Muted}' TextWrapping='Wrap' LineHeight='22'/></ScrollViewer></Border>
-<TextBlock x:Name='Version' Grid.Row='4' FontSize='11' Foreground='{StaticResource Muted}'/>
+<StackPanel Grid.Row='4'><TextBlock x:Name='Version' FontSize='11' Foreground='{StaticResource Muted}'/><WrapPanel x:Name='BrandLinks' Margin='0,10,0,0'/></StackPanel>
 </Grid>";
    Title="PCL-Helper "+AppVersion.Name;Width=840;Height=780;MinWidth=740;MinHeight=710;WindowStartupLocation=WindowStartupLocation.CenterScreen;FontFamily=new System.Windows.Media.FontFamily("Microsoft YaHei UI");FontSize=13;Background=(System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#f4f6f8");Foreground=(System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#1e242b");
    var grid=(Grid)XamlReader.Parse(xaml);Content=grid;
+   Icon=Branding.Image("App.ico");((Image)grid.FindName("BrandLogo")).Source=Branding.Image("Logo.png");
    ((TextBlock)grid.FindName("Brand")).Text="PCL-Helper "+AppVersion.Name;
-   ((TextBlock)grid.FindName("Version")).Text=AppVersion.Name+" · Turing Mirror Software · 第三方独立工具";
+   ((TextBlock)grid.FindName("Version")).Text=AppVersion.Name+" · 图灵镜 Turing Mirror · 独立辅助工具";
+   var links=Branding.ReadLinks();var footer=(WrapPanel)grid.FindName("BrandLinks");
+   foreach(var link in links.links){var target=link;var shortcut=FooterButton(link.label);shortcut.ToolTip=link.url;shortcut.Click+=(s,e)=>{try{Process.Start(new ProcessStartInfo(target.url){UseShellExecute=true});}catch(Exception ex){status.Text="打开链接失败："+ex.Message;}};footer.Children.Add(shortcut);}
+   var community=FooterButton(links.communityLabel);community.Name="Community";community.Click+=(s,e)=>CreateCommunityWindow().ShowDialog();footer.Children.Add(community);
    path=(TextBox)grid.FindName("PathBox");status=(TextBlock)grid.FindName("Status");list=(ListBox)grid.FindName("Launchers");list.ItemsSource=entries;
    Func<string,Button> button=name=>(Button)grid.FindName(name);
    var browse=button("Browse");var find=button("Find");var folder=button("FindFolder");var allDrives=button("FindAll");stop=button("Stop");
    var enable=button("Enable");var restore=button("Restore");var inspect=button("Inspect");var launch=button("Launch");var hmcl=button("LaunchHmcl");
-   var selectAll=button("SelectAll");var clear=button("ClearSelection");var enableAll=button("EnableAll");var restoreAll=button("RestoreAll");
-   actions=new[]{browse,find,folder,allDrives,enable,restore,inspect,launch,hmcl,selectAll,clear,enableAll,restoreAll};
+   selectionToggle=button("ToggleSelection");
+   actions=new[]{browse,find,folder,allDrives,enable,restore,inspect,launch,hmcl,selectionToggle};
    browse.Click+=(s,e)=>{var dialog=new OpenFileDialog{Filter="启动器程序|*.exe",Title="添加 PCL 或 HMCL",Multiselect=true};if(dialog.ShowDialog(this)==true)AddFiles(dialog.FileNames);};
    find.Click+=async(s,e)=>await Scan(LauncherDiscovery.AutomaticRoots());
    allDrives.Click+=async(s,e)=>await Scan(LauncherDiscovery.AllDriveRoots());
    folder.Click+=async(s,e)=>{using(var dialog=new System.Windows.Forms.FolderBrowserDialog{Description="选择要查找启动器的目录",ShowNewFolderButton=false}){if(dialog.ShowDialog()==System.Windows.Forms.DialogResult.OK)await Scan(new[]{dialog.SelectedPath});}};
    stop.Click+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};
-   enable.Click+=async(s,e)=>await Operate(LauncherOperation.Enable,false);
-   restore.Click+=async(s,e)=>await Operate(LauncherOperation.Restore,false);
-   inspect.Click+=async(s,e)=>await Operate(LauncherOperation.Inspect,false);
-   launch.Click+=async(s,e)=>await Operate(LauncherOperation.Launch,false);
-   enableAll.Click+=async(s,e)=>await Operate(LauncherOperation.Enable,true);
-   restoreAll.Click+=async(s,e)=>await Operate(LauncherOperation.Restore,true);
-   selectAll.Click+=(s,e)=>{foreach(var item in entries)item.Selected=true;};
-   clear.Click+=(s,e)=>{foreach(var item in entries)item.Selected=false;};
+   enable.Click+=async(s,e)=>await Operate(LauncherOperation.Enable);
+   restore.Click+=async(s,e)=>await Operate(LauncherOperation.Restore);
+   inspect.Click+=async(s,e)=>await Operate(LauncherOperation.Inspect);
+   launch.Click+=async(s,e)=>await Operate(LauncherOperation.Launch);
+   selectionToggle.Click+=(s,e)=>{var select=!entries.All(item=>item.Selected);foreach(var item in entries)item.Selected=select;UpdateSelectionButton();};
    hmcl.Click+=(s,e)=>{var dialog=new OpenFileDialog{Filter="HMCL 程序|*.exe",Title="选择 HMCL"};if(dialog.ShowDialog(this)!=true)return;try{var entry=AddFile(dialog.FileName);if(entry==null||entry.Kind!=LauncherKind.Hmcl)throw new ArgumentException("请选择 HMCL 程序。");entry.Status=LauncherActions.Run(entry,LauncherOperation.Enable);status.Text=entry.Status;}catch(Exception ex){status.Text=ex.Message;}};
    list.SelectionChanged+=(s,e)=>{var item=list.SelectedItem as LauncherEntry;if(item!=null)path.Text=item.FullPath;};
    path.KeyDown+=(s,e)=>{if(e.Key==System.Windows.Input.Key.Enter)AddFiles(new[]{path.Text.Trim().Trim('"')});};
@@ -106,11 +108,15 @@ namespace PclHelper {
    Loaded+=async(s,e)=>await Scan(startupRoots);
    Closed+=(s,e)=>{if(scanCancellation!=null)scanCancellation.Cancel();};
   }
+  static Button FooterButton(string label){return new Button{Content=label,Padding=new Thickness(12,7,12,7),Margin=new Thickness(0,0,8,0),FontSize=12};}
+  Window CreateCommunityWindow(){var links=Branding.ReadLinks();var panel=new StackPanel{Margin=new Thickness(20)};panel.Children.Add(new TextBlock{Text=links.communityHint,Margin=new Thickness(0,0,0,12),HorizontalAlignment=HorizontalAlignment.Center});panel.Children.Add(new Image{Source=Branding.Image("CommunityQr.jpg"),Height=450,Stretch=System.Windows.Media.Stretch.Uniform});return new Window{Title=links.communityTitle,Owner=this,Icon=Icon,Content=panel,SizeToContent=SizeToContent.WidthAndHeight,ResizeMode=ResizeMode.NoResize,WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=System.Windows.Media.Brushes.White};}
+  void UpdateSelectionButton(){selectionToggle.Content=entries.Count>0&&entries.All(item=>item.Selected)?"全不选":"全选";}
+  void RegisterEntry(LauncherEntry entry){entries.Add(entry);byPath.Add(entry.FullPath,entry);entry.PropertyChanged+=(s,e)=>{if(e.PropertyName=="Selected")UpdateSelectionButton();};UpdateSelectionButton();}
   LauncherEntry AddFile(string file) {
    var full=Path.GetFullPath(file.Trim().Trim('"'));LauncherEntry known;
    if(byPath.TryGetValue(full,out known))return known;
    var entry=LauncherDiscovery.Identify(full);if(entry==null)return null;
-   entries.Add(entry);byPath.Add(entry.FullPath,entry);return entry;
+   RegisterEntry(entry);return entry;
   }
   void AddFiles(IEnumerable<string> files) {
    var problems=new List<string>();int count=0;
@@ -121,7 +127,7 @@ namespace PclHelper {
   async Task Scan(IEnumerable<string> roots) {
    if(busy)return;
    SetBusy(true);scanCancellation=new CancellationTokenSource();stop.IsEnabled=true;
-   var additions=new Progress<LauncherEntry>(item=>{if(!byPath.ContainsKey(item.FullPath)){entries.Add(item);byPath.Add(item.FullPath,item);}});
+   var additions=new Progress<LauncherEntry>(item=>{if(!byPath.ContainsKey(item.FullPath))RegisterEntry(item);});
    var progress=new Progress<string>(directory=>status.Text="正在查找，已找到 "+entries.Count+" 个程序。\r\n"+directory);
    status.Text="正在查找启动器，可随时停止查找。";
    try{await Task.Run(()=>LauncherDiscovery.Scan(roots,new DiscoveryOptions(),scanCancellation.Token,((IProgress<LauncherEntry>)additions).Report,((IProgress<string>)progress).Report));status.Text=entries.Count==0?"未找到 PCL 或 HMCL 程序。可点击“添加程序”、拖入启动器 exe，或选择启动器所在目录扫描。":"查找完成，共 "+entries.Count+" 个程序。请勾选后操作。";}
@@ -129,10 +135,10 @@ namespace PclHelper {
    catch(Exception ex){status.Text=ex.Message;}
    finally{scanCancellation.Dispose();scanCancellation=null;stop.IsEnabled=false;SetBusy(false);}
   }
-  async Task Operate(LauncherOperation operation,bool all) {
+  async Task Operate(LauncherOperation operation) {
    if(busy)return;
    try{if(!string.IsNullOrWhiteSpace(path.Text)&&!byPath.ContainsKey(Path.GetFullPath(path.Text.Trim().Trim('"'))))AddFiles(new[]{path.Text});}catch(Exception ex){status.Text=ex.Message;return;}
-   var targets=entries.Where(item=>all||item.Selected).ToArray();if(targets.Length==0){status.Text="请先添加或勾选启动器。";return;}
+   var targets=entries.Where(item=>item.Selected).ToArray();if(targets.Length==0){status.Text="请先添加或勾选启动器。";return;}
    SetBusy(true);int failures=0;var output=new StringBuilder();
    try {
     foreach(var item in targets) {

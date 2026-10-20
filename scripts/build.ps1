@@ -20,6 +20,7 @@ $out=if($Console){'PCL-Helper-CLI.exe'}else{"PCL-Helper-$versionName.exe"}
 $outputDir=if($OutputDirectory){[IO.Path]::GetFullPath($OutputDirectory)}elseif($Console){Join-Path $root '.test-data'}else{Join-Path $root 'release'}
 New-Item -ItemType Directory -Force $outputDir | Out-Null
 $refs=@('System.dll','System.Core.dll','System.Windows.Forms.dll','System.Xaml.dll','System.Web.Extensions.dll','WPF\WindowsBase.dll','WPF\PresentationCore.dll','WPF\PresentationFramework.dll') | ForEach-Object { '/reference:'+(Join-Path $framework $_) }
-& $compiler /nologo /optimize+ /platform:anycpu "/target:$kind" "/out:$outputDir\$out" "/reference:$cecil" "/resource:$cecil,Mono.Cecil.dll" "/resource:$root\docs\Mono.Cecil.LICENSE.txt,Mono.Cecil.LICENSE.txt" @refs "$root\src\AppVersion.cs" "$root\src\Patcher.cs" "$root\src\HmclLauncher.cs" "$root\src\LauncherDiscovery.cs" "$root\src\LauncherActions.cs" "$root\src\Program.cs"
+$assets=@("/win32icon:$root\docs\logo\favicon.ico","/resource:$root\docs\logo\favicon.ico,App.ico","/resource:$root\docs\logo\favicon.png,Logo.png","/resource:$root\assets\qq-group.jpg,CommunityQr.jpg","/resource:$root\assets\links.json,Links.json")
+& $compiler /nologo /optimize+ /platform:anycpu "/target:$kind" "/out:$outputDir\$out" "/reference:$cecil" "/resource:$cecil,Mono.Cecil.dll" "/resource:$root\docs\Mono.Cecil.LICENSE.txt,Mono.Cecil.LICENSE.txt" @assets @refs "$root\src\AppVersion.cs" "$root\src\Branding.cs" "$root\src\Patcher.cs" "$root\src\HmclLauncher.cs" "$root\src\LauncherDiscovery.cs" "$root\src\LauncherActions.cs" "$root\src\Program.cs"
 if($LASTEXITCODE -ne 0){throw '编译失败'}
 Get-Item (Join-Path $outputDir $out) | Select-Object FullName,Length

@@ -1,0 +1,13 @@
+{
+  "links": [
+    { "label": "官网", "url": "https://www.turingmirror.com/" },
+    { "label": "哔哩哔哩", "url": "https://space.bilibili.com/3546871148579062" },
+    { "label": "抖音", "url": "https://v.douyin.com/6NxXcrKK9cc" },
+    { "label": "小红书", "url": "https://www.xiaohongshu.com/user/profile/65f56bf1000000000b00e094" },
+    { "label": "YouTube", "url": "https://www.youtube.com/@TuringMirror" },
+    { "label": "GitHub", "url": "https://github.com/Turing-Mirror" }
+  ],
+  "communityLabel": "QQ 社群",
+  "communityTitle": "图灵镜 QQ 社群",
+  "communityHint": "使用 QQ 扫码加入社群"
+}
