@@ -31,6 +31,11 @@ class JitTest {
     Console.WriteLine("JIT OK: "+method);count++;
    }
    if(count!=6)throw new Exception("Unexpected test method count: "+count);
+   if(target.GetName().Version.ToString()=="2.99.0.1") {
+    var entries=new[]{new[]{"PCL.PageSelectLeft","McFolderListUI"},new[]{"PCL.PageSelectRight","McInstanceListUI"},new[]{"PCL.PageLaunchLeft","RefreshButtonsUI"},new[]{"PCL.ModMinecraft","McDownloadClientUpdateHint"},new[]{"PCL.ModSecret","PclHelperDownloadHidden"},new[]{"PCL.ModSecret","PclHelperDownloadVisibility"},new[]{"PCL.ModSecret","PclHelperEmptyLaunchState"}};
+    foreach(var entry in entries){var method=target.GetType(entry[0],true).GetMethod(entry[1],BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance);RuntimeHelpers.PrepareMethod(method.MethodHandle);Console.WriteLine("Navigation JIT OK: "+method);}
+    RuntimeHelpers.PrepareMethod(target.GetType("PCL.PageDownloadLeft",true).GetConstructor(System.Type.EmptyTypes).MethodHandle);
+   }
    return 0;
   }catch(Exception e){Console.WriteLine(e);return 1;}
  }

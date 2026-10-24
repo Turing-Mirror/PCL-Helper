@@ -11,5 +11,7 @@ $test=Join-Path $root '.test-data\LauncherDiscoveryTest.exe'
 if($LASTEXITCODE -ne 0){throw 'Discovery test compilation failed'}
 $source=if($PclPath){(Resolve-Path -LiteralPath $PclPath).Path}else{Join-Path $root '.test-data\original\Plain Craft Launcher 2.exe.pcl-helper.bak'}
 $case=Join-Path $root ('.test-data\discovery test '+[Guid]::NewGuid().ToString('N'))
-& $test $case $source (Join-Path $root '.test-data\hmcl launch test\HMCL-probe.exe') (Join-Path $preview 'PCL-Helper-v2.exe')
+$versionSource=Get-Content -Raw (Join-Path $root 'src\AppVersion.cs')
+if($versionSource -notmatch 'public const string Name = "(v\d+)"'){throw 'Version definition missing'}
+& $test $case $source (Join-Path $root '.test-data\hmcl launch test\HMCL-probe.exe') (Join-Path $preview "PCL-Helper-$($Matches[1]).exe")
 if($LASTEXITCODE -ne 0){throw 'Discovery/batch test failed'}

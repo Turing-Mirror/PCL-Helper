@@ -1,8 +1,8 @@
-# PCL-Helper v2
+# PCL-Helper v3
 
 ## 使用
 
-运行 `PCL-Helper-v2.exe`，快速扫描或添加启动器，勾选后点击“恢复所选”。PCL 需要先退出；HMCL 使用启动参数恢复。也可拖入程序或扫描指定目录。
+运行本地构建的 `PCL-Helper-v3.exe`，快速扫描或添加启动器，勾选后点击“恢复所选”。PCL 需要先退出；HMCL 使用启动参数恢复。也可拖入程序或扫描指定目录。v3 尚未发布 Release。
 
 PCL 的“还原所选”会按 SHA256 校验备份并恢复操作前的文件。备份文件为 `<PCL 文件名>.pcl-helper.bak`，记录为 `<PCL 文件名>.pcl-helper.json`。重复恢复下载与重复还原均可执行。旧测试补丁可通过经过校验的原始备份自动重新修补。
 
@@ -19,8 +19,9 @@ HMCL、快速扫描、勾选操作及品牌入口见 [v2 使用说明](hmcl-supp
 - 整合包格式分派恢复：CurseForge、Modrinth、HMCL、MultiMC、MCBBS、附带启动器及普通压缩包。
 - 在线整合包版本列表恢复安装操作，并保留另存为。
 - 修改版本页面恢复 Minecraft 组件卡片。
+- PCL 2.99.0.1 恢复自动安装导航、主页与空版本页下载按钮、本地整合包导入入口及更新提示中的下载按钮；保留用户主动隐藏设置和 F11 强制显示行为。
 
-仅处理 2.99.0.0 且具备对应方法结构的程序。其他版本需要另行验证。PCL 自身的账号、依赖库、联网源和安装逻辑继续由 PCL 处理。
+支持 2.99.0.0 / 2.99.0.1 且具备对应方法结构的程序。其他版本需要另行验证。已有 v2 补丁通过原备份升级，仍可精确还原。PCL 自身的账号、依赖库、联网源和安装逻辑继续由 PCL 处理。
 
 ## 构建
 
@@ -30,9 +31,11 @@ Windows 需要 .NET Framework 4.x 的 C# 编译器和 WPF 程序集。运行：
 .\scripts\build.ps1
 ```
 
-脚本首次获取固定版本的 Mono.Cecil 0.11.6，并将其嵌入可执行文件。输出为 `release/PCL-Helper-v2.exe`。构建工具、测试副本、运行数据和输出目录已加入 `.gitignore`。
+脚本首次获取固定版本的 Mono.Cecil 0.11.6，并将其嵌入可执行文件。输出为 `release/PCL-Helper-v3.exe`；使用 `-OutputDirectory release/v3` 可独立输出。构建工具、测试副本、运行数据和输出目录已加入 `.gitignore`。
 
 ## 验证
+
+2026-10-25 的 PCL 2.99.0.1 官方程序已完成真实入口对照、Modrinth / CurseForge 格式整合包安装及文件补全验证，并回归旧版与 Helper GUI。见 [v3 验证报告](verification/v3/pcl-support.md)。以下为 v2 历史基线。
 
 ```powershell
 .\tests\smoke.ps1 -PclPath '你的原版 PCL.exe'

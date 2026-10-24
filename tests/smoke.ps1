@@ -8,7 +8,7 @@ function Get-TestHash([string]$Path) {
 }
 $root=Split-Path $PSScriptRoot -Parent
 & "$root\scripts\build.ps1" -Console
-$test=Join-Path $root '.test-data\smoke'
+$test=Join-Path $root ('.test-data\smoke-'+[Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force $test | Out-Null
 $target=Join-Path $test 'PCL-test.exe'
 $source=if($PclPath){(Resolve-Path -LiteralPath $PclPath).Path}else{Join-Path $root '.test-data\original\Plain Craft Launcher 2.exe.pcl-helper.bak'}
@@ -43,6 +43,7 @@ Copy-Item -LiteralPath $cli -Destination $invalid
 & $cli --enable $invalid
 if($LASTEXITCODE -eq 0){throw 'invalid target accepted'}
 'PASS: enable, inspect, repeat enable, SHA256 restore, repeat restore, reapply, six CLR JIT methods, invalid target rejection.'
+$global:LASTEXITCODE=0
 
 
 

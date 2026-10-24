@@ -9,6 +9,6 @@ $test=Join-Path $root '.test-data\GuiWorkflowTest.exe'
 if($LASTEXITCODE -ne 0){throw 'GUI test compilation failed'}
 $source=if($PclPath){(Resolve-Path -LiteralPath $PclPath).Path}else{Join-Path $root '.test-data\original\Plain Craft Launcher 2.exe.pcl-helper.bak'}
 $case=Join-Path $root ('.test-data\gui case '+[Guid]::NewGuid().ToString('N'))
-$evidence=Join-Path $root '.test-data\verification-v2'
+$evidence=Join-Path $preview 'verification'
 & $test $build.FullName $source (Join-Path $root '.test-data\hmcl launch test\HMCL-probe.exe') $case $evidence
 if($LASTEXITCODE -ne 0){throw 'GUI workflow test failed'}

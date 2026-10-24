@@ -14,7 +14,7 @@ using Mono.Cecil.Cil;
 namespace PclHelper {
  public sealed class PatchInfo {
   public string HelperVersion = AppVersion.Name;
-  public int PatchRevision = 2;
+  public int PatchRevision = Patcher.PatchRevision;
   public string OriginalSha256;
   public string PatchedSha256;
   public string FileName;
@@ -46,6 +46,17 @@ namespace PclHelper {
 public static class Patcher {
   public const string Marker = "PCLHelperVersion";
   public const string Restriction = "为遵守相关法律法规，PCL 暂时不再提供 MC 下载功能，非常抱歉 qwq……";
+  public const int PatchRevision = 3;
+  public const string SupportedVersions = "2.99.0.0、2.99.0.1";
+  sealed class Profile {
+   public string Version;
+   public string RestrictionText;
+   public bool HiddenEntries;
+  }
+  static readonly Profile[] Profiles = {
+   new Profile { Version="2.99.0.0", RestrictionText=Restriction },
+   new Profile { Version="2.99.0.1", RestrictionText="为遵守相关法律法规，PCL 不再提供 MC 下载功能，非常抱歉 qwq……", HiddenEntries=true }
+  };
   static T Retry<T>(Func<T> action) {
    for(int attempt=0;;attempt++)try{return action();}
    catch(IOException e){var code=e.HResult & 0xffff;if(attempt>=20 || (code!=32 && code!=33))throw;Thread.Sleep(100);}
@@ -111,23 +122,25 @@ public static class Patcher {
    try {
     using(var a=Read(path)) {
      var m=a.MainModule;
-     Require(a.Name.Version.ToString()=="2.99.0.0","当前仅支持 2.99.0.0");
+     var profile=Profiles.SingleOrDefault(p=>p.Version==a.Name.Version.ToString());
+     Require(profile!=null,"当前仅支持 "+SupportedVersions);
      var secret=Type(m,"ModSecret");
      if(secret.Fields.Any(f=>f.Name==Marker)) {
-      if(secret.Fields.Any(f=>f.Name=="PCLHelperPatchRevision" && Equals(f.Constant,2)))return "此 PCL 已恢复，无需重复操作。";
+      if(secret.Fields.Any(f=>f.Name=="PCLHelperPatchRevision" && Equals(f.Constant,PatchRevision)))return "此 PCL 已恢复，无需重复操作。";
       // Upgrade only through the hash-verified original backup.
       a.Dispose();Restore(path);return Enable(path);
      }
      var flag=secret.Fields.SingleOrDefault(f=>f.Name=="RestrictMcDownload");
      Require(flag!=null && flag.IsLiteral && Equals(flag.Constant,true),"下载限制状态不匹配");
      RestoreLoader(m);
-     RestorePackDispatch(m);
-     RestorePackDialog(m);
+     RestorePackDispatch(m,profile.RestrictionText);
+     RestorePackDialog(m,profile.RestrictionText);
      RestoreResourceInstall(m);
      RestoreModifyCard(m);
+     if(profile.HiddenEntries)RestoreHiddenEntries(m);
      flag.Constant=false;
      secret.Fields.Add(new FieldDefinition(Marker,Mono.Cecil.FieldAttributes.Assembly|Mono.Cecil.FieldAttributes.Static|Mono.Cecil.FieldAttributes.Literal|Mono.Cecil.FieldAttributes.HasDefault,m.TypeSystem.String) { Constant=AppVersion.Name });
-     secret.Fields.Add(new FieldDefinition("PCLHelperPatchRevision",Mono.Cecil.FieldAttributes.Assembly|Mono.Cecil.FieldAttributes.Static|Mono.Cecil.FieldAttributes.Literal|Mono.Cecil.FieldAttributes.HasDefault,m.TypeSystem.Int32) { Constant=2 });
+     secret.Fields.Add(new FieldDefinition("PCLHelperPatchRevision",Mono.Cecil.FieldAttributes.Assembly|Mono.Cecil.FieldAttributes.Static|Mono.Cecil.FieldAttributes.Literal|Mono.Cecil.FieldAttributes.HasDefault,m.TypeSystem.Int32) { Constant=PatchRevision });
      a.Write(temp);
     }
     using(var verified=Read(temp)) {
@@ -177,9 +190,9 @@ public static class Patcher {
    Require(getter!=null && getter.Next.OpCode==OpCodes.Ldc_I4_2 && Operand(getter.Next.Next).Contains("::set_Visibility("),"版本修改入口不匹配");
    getter.Next.OpCode=OpCodes.Ldc_I4_0;
   }
-  static void RestorePackDispatch(ModuleDefinition m) {
+  static void RestorePackDispatch(ModuleDefinition m,string restriction) {
    var t=Type(m,"ModModpack"); var f=Method(t,"ModpackInstall",3); var ins=f.Body.Instructions;
-   var denied=ins.SingleOrDefault(i=>i.OpCode==OpCodes.Ldstr && Equals(i.Operand,Restriction));
+   var denied=ins.SingleOrDefault(i=>i.OpCode==OpCodes.Ldstr && Equals(i.Operand,restriction));
    Require(denied!=null && denied.Next.OpCode==OpCodes.Newobj && denied.Next.Next.OpCode==OpCodes.Throw,"整合包限制入口不匹配");
    Require(f.Body.Variables.Count>4 && f.Body.Variables[1].VariableType.FullName=="System.IO.Compression.ZipArchive" && f.Body.Variables[2].VariableType.FullName=="System.String" && f.Body.Variables[4].VariableType.FullName=="System.Int32","整合包局部变量不匹配");
    var eh=f.Body.ExceptionHandlers.SingleOrDefault(e=>e.HandlerType==ExceptionHandlerType.Finally && e.TryStart.Offset<denied.Offset && e.HandlerStart.Offset>denied.Offset);
@@ -210,9 +223,9 @@ public static class Patcher {
    il.Append(ret); il.Append(Instruction.Create(OpCodes.Ret)); eh.HandlerEnd=ret;
    LongBranches(f);
   }
-  static void RestorePackDialog(ModuleDefinition m) {
+  static void RestorePackDialog(ModuleDefinition m,string restriction) {
    var t=Type(m,"ModModpack"); var f=Method(t,"ModpackInstall",0);
-   Require(f.Body.Instructions.Any(i=>Equals(i.Operand,Restriction)),"本地整合包入口不匹配");
+   Require(f.Body.Instructions.Any(i=>Equals(i.Operand,restriction)),"本地整合包入口不匹配");
    var closure=t.NestedTypes.Single(x=>x.Fields.Any(y=>y.Name=="$VB$Local_File") && x.Methods.Any(y=>y.Name=="_Lambda$__0"));
    var ctor=closure.Methods.Single(x=>x.IsConstructor && !x.IsStatic && x.Parameters.Count==0);
    f.Body=new Mono.Cecil.Cil.MethodBody(f) { InitLocals=true };
@@ -225,6 +238,57 @@ public static class Patcher {
    il.Emit(OpCodes.Ldloc,d);il.Emit(OpCodes.Callvirt,m.ImportReference(typeof(FileDialog).GetProperty("FileName").GetGetMethod()));il.Emit(OpCodes.Call,m.ImportReference(typeof(string).GetMethod("IsNullOrEmpty")));il.Emit(OpCodes.Brtrue,done);
    il.Emit(OpCodes.Ldloc,c);il.Emit(OpCodes.Ldloc,d);il.Emit(OpCodes.Callvirt,m.ImportReference(typeof(FileDialog).GetProperty("FileName").GetGetMethod()));il.Emit(OpCodes.Stfld,closure.Fields.Single(x=>x.Name=="$VB$Local_File"));
    il.Emit(OpCodes.Ldloc,c);il.Emit(OpCodes.Ldftn,closure.Methods.Single(x=>x.Name=="_Lambda$__0"));il.Emit(OpCodes.Newobj,m.ImportReference(typeof(ThreadStart).GetConstructor(new[]{typeof(object),typeof(IntPtr)})));il.Emit(OpCodes.Newobj,m.ImportReference(typeof(Thread).GetConstructor(new[]{typeof(ThreadStart)})));il.Emit(OpCodes.Dup);il.Emit(OpCodes.Ldc_I4_1);il.Emit(OpCodes.Callvirt,m.ImportReference(typeof(Thread).GetProperty("IsBackground").GetSetMethod()));il.Emit(OpCodes.Callvirt,m.ImportReference(typeof(Thread).GetMethod("Start",System.Type.EmptyTypes)));il.Append(done);
+  }
+  // Recreate only the statements removed by the 2.99.0.1 restriction constant.
+  static void RestoreHiddenEntries(ModuleDefinition m) {
+   var secret=Type(m,"ModSecret");
+   var hidden=new MethodDefinition("PclHelperDownloadHidden",Mono.Cecil.MethodAttributes.Assembly|Mono.Cecil.MethodAttributes.Static,m.TypeSystem.Boolean);
+   secret.Methods.Add(hidden);
+   var get=new GenericInstanceMethod(Type(m,"Settings").Methods.Single(x=>x.Name=="Get" && x.HasGenericParameters));
+   get.GenericArguments.Add(m.TypeSystem.Boolean);
+   var il=hidden.Body.GetILProcessor();var visible=Instruction.Create(OpCodes.Ldc_I4_0);
+   il.Emit(OpCodes.Call,Method(Type(m,"PageSetupUI"),"get_HiddenForceShow",0));il.Emit(OpCodes.Brtrue,visible);
+   il.Emit(OpCodes.Ldstr,"UiHiddenPageDownload");il.Emit(OpCodes.Ldnull);il.Emit(OpCodes.Call,get);il.Emit(OpCodes.Ret);il.Append(visible);il.Emit(OpCodes.Ret);
+   var visibility=DownloadChoice(secret,hidden,"PclHelperDownloadVisibility",2,0);
+   var state=DownloadChoice(secret,hidden,"PclHelperEmptyLaunchState",1,2);
+
+   var ctor=Method(Type(m,"PageDownloadLeft"),".ctor",0);var ins=ctor.Body.Instructions;
+   var init=ins.SingleOrDefault(i=>Operand(i).Contains("PageDownloadLeft::InitializeComponent("));
+   Require(init!=null && ins.Any(i=>Operand(i).Contains("::get_LabResource()")),"下载页导航入口不匹配");
+   for(int n=ins.IndexOf(init)+1;n<ins.Count;n++)Nop(ins[n]);
+   ins[ins.Count-1].OpCode=OpCodes.Ret;
+
+   var folders=Method(Type(m,"PageSelectLeft"),"McFolderListUI",0);ins=folders.Body.Instructions;
+   var title=ins.SingleOrDefault(i=>Equals(i.Operand,"导入整合包"));
+   Require(title!=null,"整合包列表入口不匹配");
+   var store=ins.Skip(ins.IndexOf(title)).FirstOrDefault(i=>i.OpCode==OpCodes.Stloc_1);
+   Require(store!=null && folders.Body.Variables[1].VariableType.Name=="MyListItem","整合包列表局部变量不匹配");
+   var children=ins.First(i=>Operand(i).Contains("Panel::get_Children("));
+   var add=ins.First(i=>Operand(i).Contains("UIElementCollection::Add("));
+   var code=new[]{Instruction.Create(OpCodes.Ldsfld,Type(m,"ModMain").Fields.Single(x=>x.Name=="FrmSelectLeft")),Instruction.Create(OpCodes.Callvirt,Method(Type(m,"PageSelectLeft"),"get_PanList",0)),Instruction.Create(OpCodes.Callvirt,(MethodReference)children.Operand),Instruction.Create(OpCodes.Ldloc_1),Instruction.Create(OpCodes.Callvirt,(MethodReference)add.Operand),Instruction.Create(OpCodes.Pop)};
+   var proc=folders.Body.GetILProcessor();var cursor=store;foreach(var i in code){proc.InsertAfter(cursor,i);cursor=i;}LongBranches(folders);
+
+   var list=Method(Type(m,"PageSelectRight"),"McInstanceListUI",1);ins=list.Body.Instructions;
+   var empty=ins.SingleOrDefault(i=>Equals(i.Operand,"无可用版本"));
+   Require(empty!=null,"空版本列表入口不匹配");
+   var button=ins.Skip(ins.IndexOf(empty)).FirstOrDefault(i=>Operand(i).Contains("::get_BtnEmptyDownload()"));
+   Require(button!=null && button.Next.OpCode==OpCodes.Ldc_I4_2 && Operand(button.Next.Next).Contains("::set_Visibility("),"空版本下载按钮不匹配");
+   button.Next.OpCode=OpCodes.Call;button.Next.Operand=visibility;LongBranches(list);
+
+   var launch=Method(Type(m,"PageLaunchLeft"),"RefreshButtonsUI",0);ins=launch.Body.Instructions;
+   var selected=ins.FirstOrDefault(i=>i.Operand is MethodReference && ((MethodReference)i.Operand).Name=="get_McInstanceSelected");
+   Require(selected!=null && selected.Next.OpCode==OpCodes.Brtrue_S && selected.Next.Next.OpCode==OpCodes.Ldc_I4_1 && selected.Next.Next.Next.OpCode==OpCodes.Stloc_0,"主页下载按钮状态不匹配");
+   selected.Next.Next.OpCode=OpCodes.Call;selected.Next.Next.Operand=state;LongBranches(launch);
+
+   var hint=Method(Type(m,"ModMinecraft"),"McDownloadClientUpdateHint",2);ins=hint.Body.Instructions;
+   var prompt=ins.SingleOrDefault(i=>Equals(i.Operand,"Minecraft 更新提示"));
+   Require(prompt!=null && Equals(prompt.Next.Operand,"确定") && prompt.Next.Next.OpCode==OpCodes.Ldstr && Equals(prompt.Next.Next.Operand,""),"更新提示下载入口不匹配");
+   prompt.Next.Next.Operand="下载";
+  }
+  static MethodDefinition DownloadChoice(TypeDefinition owner,MethodDefinition hidden,string name,int whenHidden,int whenVisible) {
+   var method=new MethodDefinition(name,Mono.Cecil.MethodAttributes.Assembly|Mono.Cecil.MethodAttributes.Static,owner.Module.TypeSystem.Int32);owner.Methods.Add(method);
+   var il=method.Body.GetILProcessor();var visible=Instruction.Create(OpCodes.Ldc_I4,whenVisible);
+   il.Emit(OpCodes.Call,hidden);il.Emit(OpCodes.Brfalse,visible);il.Emit(OpCodes.Ldc_I4,whenHidden);il.Emit(OpCodes.Ret);il.Append(visible);il.Emit(OpCodes.Ret);return method;
   }
   static void RestoreResourceInstall(ModuleDefinition m) {
    var t=Type(m,"PageDownloadResourceDetail");var f=Method(t,"InitializeStackResourceVersions",1);var ins=f.Body.Instructions;
