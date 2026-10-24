@@ -12,7 +12,7 @@ $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $url=(git -C $root remote get-url $Remote).Trim()
 $work=Join-Path ([IO.Path]::GetTempPath()) ('pcl-helper-github-'+[Guid]::NewGuid().ToString('N'))
-function Invoke-Git([string[]]$Arguments){& git @Arguments;if($LASTEXITCODE -ne 0){throw "git $($Arguments -join ' ') failed"}}
+function Invoke-Git([string[]]$Arguments){$ErrorActionPreference='Continue';& git @Arguments 2>&1|ForEach-Object {"$_"};if($LASTEXITCODE -ne 0){throw "git $($Arguments -join ' ') failed"}}
 try {
  Invoke-Git @('clone','--quiet','--no-local','--branch',$Branch,$root,$work)
  Push-Location $work
