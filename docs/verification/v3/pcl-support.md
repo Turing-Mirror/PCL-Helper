@@ -1,6 +1,6 @@
 # v3：PCL 2.99.0.1 适配验证
 
-2026-10-25 完成本地验证。v3 程序位于 `release/v3/PCL-Helper-v3.exe`，尚未发布 Release。
+2026-10-25 完成本地验证。交付程序为 `PCL-Helper-v3.exe`，本地位于 `release/v3/`，发布在独立的 [GitHub v3](https://github.com/Turing-Mirror/PCL-Helper/releases/tag/v3) 与 [CNB v3](https://cnb.cool/Turing-Mirror/PCL-Helper/-/releases/tag/v3)。
 
 ## 基线与恢复范围
 

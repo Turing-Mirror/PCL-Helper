@@ -2,7 +2,7 @@
 
 ## 使用
 
-运行本地构建的 `PCL-Helper-v3.exe`，快速扫描或添加启动器，勾选后点击“恢复所选”。PCL 需要先退出；HMCL 使用启动参数恢复。也可拖入程序或扫描指定目录。v3 尚未发布 Release。
+运行 `PCL-Helper-v3.exe`，快速扫描或添加启动器，勾选后点击“恢复所选”。PCL 需要先退出；HMCL 使用启动参数恢复。也可拖入程序或扫描指定目录。下载见 [GitHub v3](https://github.com/Turing-Mirror/PCL-Helper/releases/tag/v3) 或 [CNB v3](https://cnb.cool/Turing-Mirror/PCL-Helper/-/releases/tag/v3)。
 
 PCL 的“还原所选”会按 SHA256 校验备份并恢复操作前的文件。备份文件为 `<PCL 文件名>.pcl-helper.bak`，记录为 `<PCL 文件名>.pcl-helper.json`。重复恢复下载与重复还原均可执行。旧测试补丁可通过经过校验的原始备份自动重新修补。
 
