@@ -4,3 +4,4 @@ tools/
 *.log
 *.pcl-helper.bak
 *.pcl-helper.json
+*.pcl-helper.history/

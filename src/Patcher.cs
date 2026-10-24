@@ -112,6 +112,24 @@ public static class Patcher {
    for(int attempt=0;;attempt++)try{File.Replace(source,destination,null);return;}
    catch(IOException e){var code=e.HResult & 0xffff;if(attempt>=20 || (code!=32 && code!=33))throw;Thread.Sleep(100);}
   }
+  static void PreserveBackupFile(string path,string file,string kind) {
+   if(!File.Exists(file))return;
+   var directory=path+".pcl-helper.history";
+   Directory.CreateDirectory(directory);
+   var saved=Path.Combine(directory,kind+"-"+Hash(file)+(kind=="backup" ? ".bak" : ".json"));
+   if(!File.Exists(saved))File.Copy(file,saved,false);
+  }
+  static void PrepareBackup(string path,string originalHash) {
+   var backup=path+".pcl-helper.bak";var record=path+".pcl-helper.json";
+   PreserveBackupFile(path,record,"record");
+   if(File.Exists(backup) && Hash(backup)==originalHash)return;
+   PreserveBackupFile(path,backup,"backup");
+   var temp=backup+"-"+Guid.NewGuid().ToString("N")+".tmp";
+   try {
+    File.Copy(path,temp,false);
+    if(File.Exists(backup))Replace(temp,backup);else File.Move(temp,backup);
+   } finally {if(File.Exists(temp))File.Delete(temp);}
+  }
   public static string Enable(string path) {
    path=Path.GetFullPath(path);
    EnsureNotRunning(path);
@@ -148,8 +166,7 @@ public static class Patcher {
      var dispatch=Method(Type(verified.MainModule,"ModModpack"),"ModpackInstall",3);
      Require(dispatch.Body.Instructions.Any(i=>Operand(i).Contains("::InstallPackModrinth(")),"整合包分派写入失败");
     }
-    if(File.Exists(backup)) Require(Hash(backup)==originalHash,"已有不同原文件的备份，请先还原或选择新的 PCL 文件");
-    else File.Copy(path,backup,false);
+    PrepareBackup(path,originalHash);
     var info=new PatchInfo { OriginalSha256=originalHash, PatchedSha256=Hash(temp), FileName=Path.GetFileName(path), CreatedUtc=DateTime.UtcNow.ToString("o") };
     File.WriteAllText(record,new JavaScriptSerializer().Serialize(info));
     Replace(temp,path);
@@ -161,6 +178,9 @@ public static class Patcher {
    EnsureNotRunning(path);
    var backup=path+".pcl-helper.bak";
    var record=path+".pcl-helper.json";
+   using(var a=Read(path)) {
+    if(!Type(a.MainModule,"ModSecret").Fields.Any(f=>f.Name==Marker))return "此 PCL 未带有 Helper 修补标记，无需还原；已有备份保持原样。";
+   }
    Require(File.Exists(backup)&&File.Exists(record),"未找到此文件的原始备份");
    var info=new JavaScriptSerializer().Deserialize<PatchInfo>(File.ReadAllText(record));
    Require(Hash(backup)==info.OriginalSha256,"备份校验失败");

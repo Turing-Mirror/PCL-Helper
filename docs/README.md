@@ -1,10 +1,12 @@
-# PCL-Helper v3
+# PCL-Helper v4
 
 ## 使用
 
-运行 `PCL-Helper-v3.exe`，快速扫描或添加启动器，勾选后点击“恢复所选”。PCL 需要先退出；HMCL 使用启动参数恢复。也可拖入程序或扫描指定目录。下载见 [GitHub v3](https://github.com/Turing-Mirror/PCL-Helper/releases/tag/v3) 或 [CNB v3](https://cnb.cool/Turing-Mirror/PCL-Helper/-/releases/tag/v3)。
+运行 `PCL-Helper-v4.exe`，快速扫描或添加启动器，勾选后点击“恢复所选”。PCL 需要先退出；HMCL 使用启动参数恢复。也可拖入程序或扫描指定目录。下载见 [GitHub v4](https://github.com/Turing-Mirror/PCL-Helper/releases/tag/v4) 或 [CNB v4](https://cnb.cool/Turing-Mirror/PCL-Helper/-/releases/tag/v4)。
 
 PCL 的“还原所选”会按 SHA256 校验备份并恢复操作前的文件。备份文件为 `<PCL 文件名>.pcl-helper.bak`，记录为 `<PCL 文件名>.pcl-helper.json`。重复恢复下载与重复还原均可执行。旧测试补丁可通过经过校验的原始备份自动重新修补。
+
+更新 PCL 前先点击“还原所选”，更新后点击“恢复所选”。v4 自动将不同原文件的旧备份和记录保存到 `<PCL 文件名>.pcl-helper.history/`，再备份当前版本，不需要删除旧备份或换回旧 Helper。未带 Helper 修补标记的文件无需还原，不会被旧备份覆盖。详情见 [连续更新与旧版兼容验证](verification/v4/compatibility.md)。
 
 GUI 为 C# / .NET Framework WPF 原生窗口，沿用 TRM UI 的浅色、字体、圆角、间距和按钮样式。没有 Tauri、Electron 或 WebView。
 
@@ -31,7 +33,7 @@ Windows 需要 .NET Framework 4.x 的 C# 编译器和 WPF 程序集。运行：
 .\scripts\build.ps1
 ```
 
-脚本首次获取固定版本的 Mono.Cecil 0.11.6，并将其嵌入可执行文件。输出为 `release/PCL-Helper-v3.exe`；使用 `-OutputDirectory release/v3` 可独立输出。构建工具、测试副本、运行数据和输出目录已加入 `.gitignore`。
+脚本首次获取固定版本的 Mono.Cecil 0.11.6，并将其嵌入可执行文件。输出为 `release/PCL-Helper-v4.exe`；使用 `-OutputDirectory release/v4` 可独立输出。构建工具、测试副本、运行数据和输出目录已加入 `.gitignore`。
 
 ## 验证
 
